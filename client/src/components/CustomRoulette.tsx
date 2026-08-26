@@ -84,7 +84,11 @@ export const CustomRoulette: React.FC = () => {
   };
 
   const handleSpin = () => {
-    if (isSpinning || items.length < 2) return;
+    if (isSpinning) return;
+    if (items.length < 2) {
+      showLoveWarning('You need at least 2 sweet choices on the wheel to spin, darling! 🎡💖', '🥺');
+      return;
+    }
 
     setIsSpinning(true);
     setSelectedWinner(null);
@@ -205,7 +209,7 @@ export const CustomRoulette: React.FC = () => {
             {/* Center Pin Button */}
             <button
               onClick={handleSpin}
-              disabled={isSpinning || items.length < 2}
+              disabled={isSpinning}
               className="absolute z-10 w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white text-rose-600 font-extrabold text-xs sm:text-sm uppercase shadow-xl flex flex-col items-center justify-center border-4 border-rose-100 hover:scale-105 active:scale-95 transition-transform disabled:opacity-50"
             >
               <Disc size={18} className={isSpinning ? 'animate-spin text-rose-500' : 'text-rose-500'} />

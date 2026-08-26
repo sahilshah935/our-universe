@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSound } from '../context/SoundContext';
 import { useLoveToast } from '../context/LoveToastContext';
 import { uploadMedia } from '../services/firebase';
+import { SweetConfirmModal } from './SweetConfirmModal';
 import confetti from 'canvas-confetti';
 
 export const ComfortSanctuary: React.FC = () => {
@@ -96,12 +97,19 @@ export const ComfortSanctuary: React.FC = () => {
     setIsCreating(false);
   };
 
+  const [deletingDoorId, setDeletingDoorId] = useState<string | null>(null);
+
   const handleDeleteDoor = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('Delete this comfort door?')) {
+    setDeletingDoorId(id);
+  };
+
+  const confirmDeleteDoor = () => {
+    if (deletingDoorId) {
       playHeartPop();
-      coupleStore.deleteComfortDoor(id);
-      if (openedDoor?.id === id) setOpenedDoor(null);
+      coupleStore.deleteComfortDoor(deletingDoorId);
+      if (openedDoor?.id === deletingDoorId) setOpenedDoor(null);
+      setDeletingDoorId(null);
     }
   };
 
@@ -423,6 +431,14 @@ export const ComfortSanctuary: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Sweet Confirm Modal */}
+      <SweetConfirmModal
+        isOpen={deletingDoorId !== null}
+        message="Are you sure you want to remove this comfort door, my love?"
+        onConfirm={confirmDeleteDoor}
+        onCancel={() => setDeletingDoorId(null)}
+      />
     </div>
   );
 };

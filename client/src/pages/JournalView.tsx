@@ -6,6 +6,7 @@ import { useSound } from '../context/SoundContext';
 import { useLoveToast } from '../context/LoveToastContext';
 import { PostItBoard } from '../components/PostItBoard';
 import { TimeCapsuleModal } from '../components/TimeCapsuleModal';
+import { SweetConfirmModal } from '../components/SweetConfirmModal';
 import { Heart, Lock, Unlock, Plus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -56,10 +57,17 @@ export const JournalView: React.FC = () => {
     setContent('');
   };
 
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const handleDelete = (id: string) => {
-    if (confirm('Delete this letter?')) {
+    setDeletingId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deletingId) {
       playHeartPop();
-      coupleStore.deleteNote(id);
+      coupleStore.deleteNote(deletingId);
+      setDeletingId(null);
     }
   };
 
@@ -343,6 +351,13 @@ export const JournalView: React.FC = () => {
 
       {/* SUB-TAB 3: POST-IT BOARD */}
       {subTab === 'fridge' && <PostItBoard />}
+
+      <SweetConfirmModal
+        isOpen={deletingId !== null}
+        message="Are you sure you want to remove this love letter from our journal, my love?"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeletingId(null)}
+      />
     </div>
   );
 };

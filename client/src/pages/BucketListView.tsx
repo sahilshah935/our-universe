@@ -6,6 +6,7 @@ import { useSound } from '../context/SoundContext';
 import { useLoveToast } from '../context/LoveToastContext';
 import { CheckCircle2, Circle, Plus, Trash2, Award, Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { SweetConfirmModal } from '../components/SweetConfirmModal';
 import confetti from 'canvas-confetti';
 
 const BUCKET_CATEGORIES = [
@@ -70,10 +71,17 @@ export const BucketListView: React.FC = () => {
     playSparkle();
   };
 
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const handleDelete = (id: string) => {
-    if (confirm('Remove item from bucket list?')) {
+    setDeletingId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deletingId) {
       playHeartPop();
-      coupleStore.deleteBucketItem(id);
+      coupleStore.deleteBucketItem(deletingId);
+      setDeletingId(null);
     }
   };
 
@@ -289,6 +297,13 @@ export const BucketListView: React.FC = () => {
           ))}
         </div>
       )}
+      {/* Sweet Confirm Modal */}
+      <SweetConfirmModal
+        isOpen={deletingId !== null}
+        message="Are you sure you want to remove this dream item from our bucket list, my love?"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeletingId(null)}
+      />
     </div>
   );
 };

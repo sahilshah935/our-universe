@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Cloud, CheckCircle2, AlertCircle, X, Save, Copy } from 'lucide-react';
 import { getStoredFirebaseConfig, saveFirebaseConfig, isFirebaseConnected } from '../services/firebase';
+import { useLoveToast } from '../context/LoveToastContext';
 import { FirebaseConfig } from '../types';
 
 export const FirebaseSettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
@@ -21,14 +22,16 @@ export const FirebaseSettingsModal: React.FC<{ isOpen: boolean; onClose: () => v
 
   if (!isOpen) return null;
 
-  const handlePasteJson = () => {
+  const handleParseJson = () => {
+    if (!jsonInput.trim()) return;
     try {
-      // Clean up js object string if copied from firebase console: const firebaseConfig = { ... }
       let clean = jsonInput.trim();
-      if (clean.includes('{')) {
-        clean = clean.substring(clean.indexOf('{'), clean.lastIndexOf('}') + 1);
+      if (clean.includes('firebaseConfig =')) {
+        clean = clean.split('firebaseConfig =')[1];
       }
-      // Replace single quotes or unquoted keys with JSON syntax
+      if (clean.endsWith(';')) {
+        clean = clean.slice(0, -1);
+      }
       const parsed = Function(`return ${clean}`)();
       if (parsed.apiKey) setApiKey(parsed.apiKey);
       if (parsed.authDomain) setAuthDomain(parsed.authDomain);
@@ -38,15 +41,16 @@ export const FirebaseSettingsModal: React.FC<{ isOpen: boolean; onClose: () => v
       if (parsed.appId) setAppId(parsed.appId);
       if (parsed.databaseURL) setDatabaseURL(parsed.databaseURL);
       setJsonInput('');
+      showLoveSuccess('Firebase config parsed like magic! ✨', '🚀');
     } catch (e) {
-      alert('Could not parse Firebase config. Please check the format.');
+      showLoveWarning('Could not read this Firebase config format, my love! 🥺');
     }
   };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!apiKey || !projectId) {
-      alert('API Key and Project ID are required');
+      showLoveWarning('API Key and Project ID are required to connect, darling! ☁️', '🥺');
       return;
     }
 
