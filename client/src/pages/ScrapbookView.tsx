@@ -195,10 +195,6 @@ export const ScrapbookView: React.FC = () => {
                   coupleStore.deleteMemory(mem.id);
                   setMemories(coupleStore.getMemories());
                 }}
-                onLiked={(updated) => {
-                  coupleStore.likeMemory(mem.id);
-                  setMemories(coupleStore.getMemories());
-                }}
                 onZoom={(m) => setZoomedMemory(m)}
               />
             );

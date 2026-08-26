@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, MapPin, Calendar, Trash2, Maximize2, RotateCw } from 'lucide-react';
+import { MapPin, Calendar, Trash2, Maximize2, RotateCw } from 'lucide-react';
 import { Memory } from '../types';
 import { coupleStore } from '../services/store';
-import { useSound } from '../context/SoundContext';
 import { useLoveToast } from '../context/LoveToastContext';
 import { SweetConfirmModal } from './SweetConfirmModal';
 
@@ -11,7 +10,6 @@ interface PolaroidCardProps {
   memory: Memory;
   rotation?: number;
   onDeleted?: (id: string) => void;
-  onLiked?: (memory: Memory) => void;
   onZoom?: (memory: Memory) => void;
 }
 
@@ -19,26 +17,11 @@ export const PolaroidCard: React.FC<PolaroidCardProps> = ({
   memory,
   rotation = 0,
   onDeleted,
-  onLiked,
   onZoom
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
-  const [likes, setLikes] = useState(memory.likes || 0);
-  const [isLikedByUser, setIsLikedByUser] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const { playHeartPop } = useSound();
   const { showLoveSuccess } = useLoveToast();
-
-  const handleLike = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isLikedByUser) return;
-
-    playHeartPop();
-    setLikes((prev) => prev + 1);
-    setIsLikedByUser(true);
-    const updated = coupleStore.likeMemory(memory.id);
-    if (onLiked) onLiked(updated);
-  };
 
   const confirmDelete = () => {
     coupleStore.deleteMemory(memory.id);
@@ -75,7 +58,7 @@ export const PolaroidCard: React.FC<PolaroidCardProps> = ({
           }}
         >
           {/* FRONT: Photo & Caption */}
-          <div className="backface-hidden p-3.5 pb-5">
+          <div className="backface-hidden p-3.5 pb-4">
             {/* Photo View */}
             <div className="relative aspect-4/3 w-full bg-stone-100 rounded-xl overflow-hidden mb-3.5 group shadow-inner">
               <img
@@ -133,20 +116,12 @@ export const PolaroidCard: React.FC<PolaroidCardProps> = ({
               </div>
             </div>
 
-            {/* Like Counter Button */}
-            <div className="mt-3 pt-2 border-t border-rose-100/60 flex items-center justify-between text-xs text-stone-500">
-              <span className="text-[11px] text-stone-400 flex items-center gap-1">
-                <RotateCw size={11} className="text-rose-400" /> Flip for note
+            {/* Flip Indicator */}
+            <div className="mt-2.5 pt-2 border-t border-rose-100/60 flex items-center justify-between text-[11px] text-stone-400">
+              <span className="flex items-center gap-1">
+                <RotateCw size={11} className="text-rose-400" /> Flip to read secret note
               </span>
-              <button
-                onClick={handleLike}
-                className={`flex items-center gap-1 font-semibold px-2.5 py-1 rounded-full transition-transform active:scale-125 cursor-pointer ${
-                  isLikedByUser ? 'text-rose-500 bg-rose-50' : 'hover:text-rose-500 hover:bg-rose-50/50'
-                }`}
-              >
-                <Heart size={14} className={isLikedByUser ? 'fill-rose-500 text-rose-500' : ''} />
-                <span>{likes}</span>
-              </button>
+              <span className="text-rose-400 font-mono text-[10px]">{memory.chapter}</span>
             </div>
           </div>
 
