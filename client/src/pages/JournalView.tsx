@@ -8,22 +8,11 @@ import { TimeCapsuleModal } from '../components/TimeCapsuleModal';
 import { Heart, Lock, Unlock, Plus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const JOURNAL_TAGS = [
-  'All',
-  'Why I Love You',
-  'Random Midnight Thoughts',
-  'Gratitude',
-  'Sorry / Hug Me',
-  'Promises',
-  'Surprise / Time Capsule'
-];
-
 export const JournalView: React.FC = () => {
   const { currentPartner } = useAuth();
   const { playSparkle, playHeartPop } = useSound();
   const [subTab, setSubTab] = useState<'letters' | 'capsules' | 'fridge'>('letters');
   const [notes, setNotes] = useState<Note[]>(() => coupleStore.getNotes(false));
-  const [selectedTag, setSelectedTag] = useState('All');
   const [isAddingLetter, setIsAddingLetter] = useState(false);
   const [isAddingCapsule, setIsAddingCapsule] = useState(false);
 
@@ -66,7 +55,7 @@ export const JournalView: React.FC = () => {
     }
   };
 
-  const letters = notes.filter((n) => !n.isLocked && (selectedTag === 'All' || n.tag === selectedTag));
+  const letters = notes.filter((n) => !n.isLocked);
   const capsules = notes.filter((n) => Boolean(n.isLocked));
 
   return (
@@ -118,23 +107,10 @@ export const JournalView: React.FC = () => {
       {/* SUB-TAB 1: LOVE LETTERS */}
       {subTab === 'letters' && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            {/* Tag Filters */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-2 no-scrollbar max-w-full">
-              {JOURNAL_TAGS.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setSelectedTag(t)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition ${
-                    selectedTag === t
-                      ? 'bg-rose-500 text-white shadow-xs'
-                      : 'bg-white/80 hover:bg-rose-50 text-stone-600 border border-stone-200/60'
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
+          <div className="flex items-center justify-between">
+            <p className="text-stone-500 text-xs sm:text-sm">
+              All love letters and notes written for each other.
+            </p>
 
             <button
               onClick={() => setIsAddingLetter(true)}
@@ -222,7 +198,7 @@ export const JournalView: React.FC = () => {
           {letters.length === 0 ? (
             <div className="py-12 text-center bg-white/50 rounded-3xl border-2 border-dashed border-rose-200">
               <p className="text-stone-400 text-sm italic">
-                No letters written in this category yet. Surprise your partner with a sweet letter! 💌
+                No letters written yet. Surprise your partner with a sweet letter! 💌
               </p>
             </div>
           ) : (
