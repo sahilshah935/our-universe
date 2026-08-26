@@ -14,6 +14,7 @@ import {
 } from '../types';
 import { firestoreDb } from './firebase';
 import { doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { saveMediaItem, getMediaItem, getAllMediaItems, deleteMediaItem } from './imageDb';
 
 // Helper to calculate next occurrence of a birthday (MM-DD)
 function getNextBirthdayDate(month: number, day: number, hour = 0, min = 0): string {
@@ -305,7 +306,41 @@ class CoupleStore {
 
   constructor() {
     this.data = this.loadLocal();
+    this.hydrateMediaFromIndexedDB();
     this.initFirebaseSync();
+  }
+
+  private async hydrateMediaFromIndexedDB() {
+    try {
+      const mediaMap = await getAllMediaItems();
+      let hasUpdates = false;
+
+      // Hydrate partner avatars
+      if (mediaMap['partner_avatar_partner1'] && this.data.partners[0]) {
+        this.data.partners[0].avatar = mediaMap['partner_avatar_partner1'];
+        hasUpdates = true;
+      }
+      if (mediaMap['partner_avatar_partner2'] && this.data.partners[1]) {
+        this.data.partners[1].avatar = mediaMap['partner_avatar_partner2'];
+        hasUpdates = true;
+      }
+
+      // Hydrate memories
+      const updatedMemories = this.data.memories.map((m) => {
+        if (mediaMap[m.id]) {
+          hasUpdates = true;
+          return { ...m, imageUrl: mediaMap[m.id] };
+        }
+        return m;
+      });
+
+      if (hasUpdates) {
+        this.data.memories = updatedMemories;
+        this.notify();
+      }
+    } catch (e) {
+      console.warn('Hydration warning:', e);
+    }
   }
 
   private loadLocal() {
@@ -374,27 +409,55 @@ class CoupleStore {
     if (!firestoreDb) return;
     try {
       const docRef = doc(firestoreDb, 'couple_hub', 'main_data');
-      onSnapshot(docRef, (docSnap) => {
+      onSnapshot(docRef, async (docSnap) => {
         if (docSnap.exists()) {
           const remoteData = docSnap.data();
           if (remoteData) {
-            // Smart merge: retain local partner avatars/edits if remote is blank
+            // Smart merge partners (never overwrite with blank)
             const mergedPartners = this.data.partners.map((localP) => {
               const remoteP = remoteData.partners?.find((rp: any) => rp.id === localP.id);
               if (!remoteP) return localP;
               return {
                 ...localP,
                 ...remoteP,
-                avatar: remoteP.avatar || localP.avatar
+                avatar: localP.avatar || remoteP.avatar
               };
             });
+
+            // Smart merge memories (non-destructive union by id)
+            const localMemories = this.data.memories || [];
+            const remoteMemories = (remoteData.memories as Memory[]) || [];
+            const memMap = new Map<string, Memory>();
+
+            // Put remote memories first
+            for (const rm of remoteMemories) {
+              memMap.set(rm.id, rm);
+            }
+            // Put local memories next (preserving locally uploaded photos)
+            for (const lm of localMemories) {
+              const existing = memMap.get(lm.id);
+              if (existing) {
+                memMap.set(lm.id, {
+                  ...existing,
+                  ...lm,
+                  imageUrl: lm.imageUrl || existing.imageUrl
+                });
+              } else {
+                memMap.set(lm.id, lm);
+              }
+            }
+
+            const mergedMemories = Array.from(memMap.values());
 
             this.data = {
               ...this.data,
               ...remoteData,
-              partners: mergedPartners.length > 0 ? mergedPartners : this.data.partners
+              partners: mergedPartners.length > 0 ? mergedPartners : this.data.partners,
+              memories: mergedMemories
             };
-            localStorage.setItem('asmi_couple_store_v2', JSON.stringify(this.data));
+            try {
+              localStorage.setItem('asmi_couple_store_v2', JSON.stringify(this.data));
+            } catch (e) {}
             this.notify();
           }
         } else {
@@ -435,6 +498,9 @@ class CoupleStore {
   }
   updatePartner(id: string, updates: Partial<Partner>): Partner {
     this.data.partners = this.data.partners.map((p) => (p.id === id ? { ...p, ...updates } : p));
+    if (updates.avatar) {
+      saveMediaItem('partner_avatar_' + id, updates.avatar);
+    }
     this.saveLocal();
     return this.data.partners.find((p) => p.id === id)!;
   }
@@ -469,6 +535,9 @@ class CoupleStore {
       likes: 0,
       createdAt: new Date().toISOString()
     };
+    if (created.imageUrl) {
+      saveMediaItem(created.id, created.imageUrl);
+    }
     this.data.memories = [created, ...this.data.memories];
     this.saveLocal();
     return created;
@@ -482,6 +551,7 @@ class CoupleStore {
   }
   deleteMemory(id: string) {
     this.data.memories = this.data.memories.filter((m) => m.id !== id);
+    deleteMediaItem(id);
     this.saveLocal();
   }
 
