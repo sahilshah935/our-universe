@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Memory } from '../types';
 import { coupleStore } from '../services/store';
-import { uploadMedia } from '../services/firebase';
+import { uploadImage } from '../services/imageUpload';
 import { PolaroidCard } from '../components/PolaroidCard';
 import { useAuth } from '../context/AuthContext';
 import { useSound } from '../context/SoundContext';
@@ -52,7 +52,7 @@ export const ScrapbookView: React.FC = () => {
 
     setIsUploading(true);
     try {
-      const url = await uploadMedia(file);
+      const url = await uploadImage(file);
       setImageUrl(url);
       showLoveSuccess('Photo loaded beautifully! 📸', '✨');
     } catch (err) {

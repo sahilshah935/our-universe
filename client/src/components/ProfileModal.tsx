@@ -4,7 +4,7 @@ import { X, Camera, Save } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSound } from '../context/SoundContext';
 import { useLoveToast } from '../context/LoveToastContext';
-import { uploadMedia } from '../services/firebase';
+import { uploadImage } from '../services/imageUpload';
 
 export const ProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
   isOpen,
@@ -45,7 +45,7 @@ export const ProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
 
     setIsUploading(true);
     try {
-      const url = await uploadMedia(file);
+      const url = await uploadImage(file);
       setAvatar(url);
       showLoveSuccess('Looking gorgeous! Avatar uploaded ❤️', '✨');
     } catch (err) {

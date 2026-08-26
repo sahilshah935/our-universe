@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Sparkles, X, Upload, Save, Heart, Palette, Image as ImageIcon, Smile } from 'lucide-react';
 import { SiteSettings } from '../types';
 import { coupleStore } from '../services/store';
-import { uploadMedia } from '../services/firebase';
+import { uploadImage } from '../services/imageUpload';
 import { useSound } from '../context/SoundContext';
 import { useLoveToast } from '../context/LoveToastContext';
 import confetti from 'canvas-confetti';
@@ -43,7 +43,7 @@ export const LogoSettingsModal: React.FC<{ isOpen: boolean; onClose: () => void 
 
     setIsUploading(true);
     try {
-      const url = await uploadMedia(file);
+      const url = await uploadImage(file);
       setLogoImageUrl(url);
       setLogoType('image');
       showLoveSuccess('Logo image uploaded beautifully! 🎨', '✨');

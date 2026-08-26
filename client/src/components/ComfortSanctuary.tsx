@@ -6,7 +6,7 @@ import { coupleStore } from '../services/store';
 import { useAuth } from '../context/AuthContext';
 import { useSound } from '../context/SoundContext';
 import { useLoveToast } from '../context/LoveToastContext';
-import { uploadMedia } from '../services/firebase';
+import { uploadImage } from '../services/imageUpload';
 import { SweetConfirmModal } from './SweetConfirmModal';
 import confetti from 'canvas-confetti';
 
@@ -50,7 +50,7 @@ export const ComfortSanctuary: React.FC = () => {
 
     setIsUploading(true);
     try {
-      const url = await uploadMedia(file);
+      const url = await uploadImage(file);
       setMemeUrl(url);
       showLoveSuccess('Attached photo/meme successfully! 📸', '✨');
     } catch (err) {

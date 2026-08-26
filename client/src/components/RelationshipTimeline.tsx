@@ -5,7 +5,7 @@ import { coupleStore } from '../services/store';
 import { useAuth } from '../context/AuthContext';
 import { useSound } from '../context/SoundContext';
 import { useLoveToast } from '../context/LoveToastContext';
-import { uploadMedia } from '../services/firebase';
+import { uploadImage } from '../services/imageUpload';
 import { Sparkles, Plus, Calendar, Heart, Camera, Compass, Trash2, ArrowDown, Star, MapPin } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -46,7 +46,7 @@ export const RelationshipTimeline: React.FC = () => {
     if (!file) return;
     setIsUploading(true);
     try {
-      const url = await uploadMedia(file);
+      const url = await uploadImage(file);
       setPhotoUrl(url);
       showLoveSuccess('Story photo uploaded! 📸', '✨');
     } catch (err) {
