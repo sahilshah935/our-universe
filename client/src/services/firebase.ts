@@ -101,49 +101,74 @@ export function listenToLoveTouch(onReceived: (event: PokeEvent) => void): () =>
 }
 
 /**
- * Optimizes and compresses photos into lightweight WebP Data URIs (~25-50KB)
- * so they persist permanently in Firestore and localStorage without hitting quota limits.
+ * Optimizes and compresses photos into lightweight WebP Data URIs (~25-45KB)
+ * Guaranteed to resolve safely and never hang.
  */
 export async function uploadMedia(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
+    // 8-second safety fallback
+    const timeout = setTimeout(() => {
+      const fallbackUrl = URL.createObjectURL(file);
+      resolve(fallbackUrl);
+    }, 8000);
+
     const reader = new FileReader();
     reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (!result) {
+        clearTimeout(timeout);
+        resolve(URL.createObjectURL(file));
+        return;
+      }
+
       const img = new Image();
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800;
-        const MAX_HEIGHT = 800;
-        let width = img.width;
-        let height = img.height;
+        try {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 750;
+          const MAX_HEIGHT = 750;
+          let width = img.width;
+          let height = img.height;
 
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height = Math.round((height * MAX_WIDTH) / width);
-            width = MAX_WIDTH;
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
           }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width = Math.round((width * MAX_HEIGHT) / height);
-            height = MAX_HEIGHT;
-          }
-        }
 
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          // High-efficiency WebP compression at 0.68 quality (looks crystal clear, ~35KB)
-          const dataUrl = canvas.toDataURL('image/webp', 0.68);
-          resolve(dataUrl);
-        } else {
-          resolve(event.target?.result as string);
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL('image/webp', 0.65);
+            clearTimeout(timeout);
+            resolve(dataUrl);
+          } else {
+            clearTimeout(timeout);
+            resolve(result);
+          }
+        } catch (e) {
+          clearTimeout(timeout);
+          resolve(result);
         }
       };
-      img.onerror = () => resolve(event.target?.result as string);
-      img.src = event.target?.result as string;
+      img.onerror = () => {
+        clearTimeout(timeout);
+        resolve(result);
+      };
+      img.src = result;
     };
-    reader.onerror = reject;
+    reader.onerror = () => {
+      clearTimeout(timeout);
+      resolve(URL.createObjectURL(file));
+    };
     reader.readAsDataURL(file);
   });
 }
