@@ -87,6 +87,37 @@ const DEFAULT_COUNTDOWNS: Countdown[] = [
   }
 ];
 
+const DEFAULT_MEMORIES: Memory[] = [
+  {
+    id: 'mem_1',
+    title: 'Sunset Coffee & Croissants 🥐',
+    description: 'Sitting across from you laughing until our cheeks hurt. You looked so pretty in the golden hour light.',
+    date: '2024-04-14',
+    location: 'Cozy Bakery Cafe',
+    chapter: 'Cozy Dates',
+    mood: 'Magical ✨',
+    imageUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=600',
+    authorId: 'partner1',
+    likes: 5,
+    pinned: 1,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'mem_2',
+    title: 'The Night Everything Changed 🌙',
+    description: 'Looking into your eyes and realizing I never want to spend a single day without you.',
+    date: '2024-03-13',
+    location: 'Under the Starlight',
+    chapter: 'Chapter 1: The Beginning',
+    mood: 'Romantic 🍷',
+    imageUrl: 'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&q=80&w=600',
+    authorId: 'partner2',
+    likes: 8,
+    pinned: 1,
+    createdAt: new Date().toISOString()
+  }
+];
+
 const DEFAULT_TIMELINE: Milestone[] = [
   {
     id: 'tl_1',
@@ -280,7 +311,7 @@ export class CoupleStore {
           settings: parsed.settings || DEFAULT_SETTINGS,
           partners: parsed.partners || DEFAULT_PARTNERS,
           countdowns: parsed.countdowns || DEFAULT_COUNTDOWNS,
-          memories: parsed.memories || [],
+          memories: parsed.memories && parsed.memories.length > 0 ? parsed.memories : DEFAULT_MEMORIES,
           notes: parsed.notes || [],
           bucketList: parsed.bucketList || [],
           loveJar: parsed.loveJar || [],
