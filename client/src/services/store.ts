@@ -347,7 +347,12 @@ class CoupleStore {
   }
 
   private saveLocal() {
-    localStorage.setItem('asmi_couple_store_v2', JSON.stringify(this.data));
+    try {
+      localStorage.setItem('asmi_couple_store_v2', JSON.stringify(this.data));
+      localStorage.setItem('asmi_partners_backup', JSON.stringify(this.data.partners));
+    } catch (e) {
+      console.warn('LocalStorage quota warning:', e);
+    }
     this.notify();
     this.syncToFirebase();
   }
@@ -373,7 +378,22 @@ class CoupleStore {
         if (docSnap.exists()) {
           const remoteData = docSnap.data();
           if (remoteData) {
-            this.data = { ...this.data, ...remoteData };
+            // Smart merge: retain local partner avatars/edits if remote is blank
+            const mergedPartners = this.data.partners.map((localP) => {
+              const remoteP = remoteData.partners?.find((rp: any) => rp.id === localP.id);
+              if (!remoteP) return localP;
+              return {
+                ...localP,
+                ...remoteP,
+                avatar: remoteP.avatar || localP.avatar
+              };
+            });
+
+            this.data = {
+              ...this.data,
+              ...remoteData,
+              partners: mergedPartners.length > 0 ? mergedPartners : this.data.partners
+            };
             localStorage.setItem('asmi_couple_store_v2', JSON.stringify(this.data));
             this.notify();
           }

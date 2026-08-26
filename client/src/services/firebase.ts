@@ -1,6 +1,6 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
-import { FirebaseConfig } from '../types';
+import { getFirestore, Firestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { FirebaseConfig, PokeEvent } from '../types';
 
 export const DEFAULT_FIREBASE_CONFIG: FirebaseConfig = {
   apiKey: "AIzaSyCjb1EMc9IIJ7AKzOQB3fiZf-seXKiO_jc",
@@ -62,8 +62,47 @@ export function isFirebaseConnected(): boolean {
 }
 
 /**
- * Optimizes and compresses photos into high-efficiency WebP Data URIs
- * for instant, 100% free Google Cloud storage.
+ * Send real-time love touch event to Firebase Firestore
+ */
+export async function sendRealtimeLoveTouch(event: PokeEvent): Promise<void> {
+  if (!firestoreDb) return;
+  try {
+    const touchDoc = doc(firestoreDb, 'couple_hub', 'love_touch');
+    await setDoc(touchDoc, {
+      ...event,
+      sentAt: Date.now()
+    });
+  } catch (err) {
+    console.warn('Love touch send error:', err);
+  }
+}
+
+/**
+ * Listen for incoming real-time love touches from partner
+ */
+export function listenToLoveTouch(onReceived: (event: PokeEvent) => void): () => void {
+  if (!firestoreDb) return () => {};
+  try {
+    const touchDoc = doc(firestoreDb, 'couple_hub', 'love_touch');
+    const unsubscribe = onSnapshot(touchDoc, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data() as PokeEvent & { sentAt: number };
+        // Only trigger if sent within the last 15 seconds
+        if (data && data.sentAt && Date.now() - data.sentAt < 15000) {
+          onReceived(data);
+        }
+      }
+    });
+    return unsubscribe;
+  } catch (err) {
+    console.warn('Love touch listener error:', err);
+    return () => {};
+  }
+}
+
+/**
+ * Optimizes and compresses photos into lightweight WebP Data URIs (~25-50KB)
+ * so they persist permanently in Firestore and localStorage without hitting quota limits.
  */
 export async function uploadMedia(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -72,8 +111,8 @@ export async function uploadMedia(file: File): Promise<string> {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1280;
-        const MAX_HEIGHT = 1280;
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
         let width = img.width;
         let height = img.height;
 
@@ -94,7 +133,8 @@ export async function uploadMedia(file: File): Promise<string> {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/webp', 0.82);
+          // High-efficiency WebP compression at 0.68 quality (looks crystal clear, ~35KB)
+          const dataUrl = canvas.toDataURL('image/webp', 0.68);
           resolve(dataUrl);
         } else {
           resolve(event.target?.result as string);

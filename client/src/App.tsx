@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { SoundProvider } from './context/SoundContext';
 import { LoveToastProvider } from './context/LoveToastContext';
 import { SocketProvider } from './context/SocketContext';
 import { Navbar } from './components/Navbar';
 import { HeartShower } from './components/HeartShower';
+import { LoveTouchReceiver } from './components/LoveTouchReceiver';
 import { LoveJarModal } from './components/LoveJarModal';
 import { PrintableMemoryBook } from './components/PrintableMemoryBook';
 import { ProfileModal } from './components/ProfileModal';
@@ -129,8 +131,11 @@ const MainApp: React.FC = () => {
         onClose={() => setIsLogoModalOpen(false)}
       />
 
+      {/* Real-time Love Touch Receiver Experience */}
+      <LoveTouchReceiver />
+
       {/* Romantic Footer */}
-      <footer className="py-6 border-t border-rose-200/50 bg-white/40 backdrop-blur-xs text-center text-xs text-stone-500">
+      <footer className="py-6 border-t border-rose-200/50 bg-white/40 dark:bg-stone-900/40 backdrop-blur-xs text-center text-xs text-stone-500 dark:text-stone-400">
         <div className="flex items-center justify-center gap-1.5 font-medium">
           Made with <Heart size={14} className="fill-rose-500 text-rose-500 animate-pulse" /> for Sahil (BabyGirl) & Asmi (Supari / Girl) &bull; Cozy Couple Hub
         </div>
@@ -141,15 +146,17 @@ const MainApp: React.FC = () => {
 
 export function App() {
   return (
-    <AuthProvider>
-      <SoundProvider>
-        <LoveToastProvider>
-          <SocketProvider>
-            <MainApp />
-          </SocketProvider>
-        </LoveToastProvider>
-      </SoundProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <SoundProvider>
+          <LoveToastProvider>
+            <SocketProvider>
+              <MainApp />
+            </SocketProvider>
+          </LoveToastProvider>
+        </SoundProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
