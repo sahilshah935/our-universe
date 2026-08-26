@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Sparkles, Star, Edit3 } from 'lucide-react';
+import { Heart, Sparkles, Star, Edit3, Cloud } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { isFirebaseConnected } from '../services/firebase';
+import { isR2Configured } from '../services/r2Storage';
 import { coupleStore, SiteSettings } from '../services/store';
 import { motion } from 'framer-motion';
 
@@ -13,6 +14,7 @@ interface NavbarProps {
   onOpenLoveJar: () => void;
   onOpenFirebaseModal: () => void;
   onOpenLogoModal: () => void;
+  onOpenR2Modal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -22,10 +24,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenProfile,
   onOpenLoveJar,
   onOpenFirebaseModal,
-  onOpenLogoModal
+  onOpenLogoModal,
+  onOpenR2Modal
 }) => {
   const { currentPartner, otherPartner, switchPartner } = useAuth();
   const firebaseConnected = isFirebaseConnected();
+  const r2Connected = isR2Configured();
   const [settings, setSettings] = useState<SiteSettings>(() => coupleStore.getSettings());
 
   useEffect(() => {
@@ -57,22 +61,21 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             </motion.div>
             
-            <div className="cursor-pointer" onClick={onOpenLogoModal} title="Click to customize title">
-              <span className="text-lg sm:text-xl font-extrabold font-serif-title text-stone-900 tracking-tight flex items-center gap-1.5 leading-tight">
-                {settings.title || 'Us'} <span className="text-rose-500">&bull;</span> {settings.subtitle || 'Couple Hub'}
-              </span>
-              <div className="flex items-center gap-2">
+            <div>
+              <div className="cursor-pointer" onClick={onOpenLogoModal} title="Click to customize title">
+                <span className="text-lg sm:text-xl font-extrabold font-serif-title text-stone-900 tracking-tight flex items-center gap-1.5 leading-tight">
+                  {settings.title || 'Us'} <span className="text-rose-500">&bull;</span> {settings.subtitle || 'Couple Hub'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 mt-0.5">
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenFirebaseModal();
-                  }}
-                  className="flex items-center gap-1 text-[11px] text-stone-500 font-medium hover:text-rose-600 transition"
-                  title="Cloud sync status (Click to configure)"
+                  onClick={onOpenR2Modal}
+                  className="flex items-center gap-1 text-[11px] text-stone-500 font-medium hover:text-orange-600 transition cursor-pointer"
+                  title="Configure Cloudflare R2 Cloud Storage"
                 >
-                  <span className={`w-2 h-2 rounded-full ${firebaseConnected ? 'bg-emerald-500' : 'bg-amber-400'} animate-pulse`} />
-                  <span>{firebaseConnected ? 'Firebase Cloud Active' : 'Local Real-Time'}</span>
+                  <Cloud size={12} className={r2Connected ? 'text-orange-500' : 'text-stone-400'} />
+                  <span>{r2Connected ? 'Cloudflare R2 Active' : 'Configure Cloudflare R2'}</span>
                 </button>
               </div>
             </div>

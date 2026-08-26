@@ -15,6 +15,7 @@ import {
 import { firestoreDb } from './firebase';
 import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { saveMediaItem, getAllMediaItems, deleteMediaItem } from './imageDb';
+import { saveAllDataToR2, loadAllDataFromR2, isR2Configured } from './r2Storage';
 
 function getNextBirthdayDate(month: number, day: number, hour = 0, min = 0): string {
   const now = new Date();
@@ -267,6 +268,36 @@ export class CoupleStore {
     this.data = this.loadLocal();
     this.hydrateMediaFromIndexedDB();
     this.initFirebaseSync();
+    this.initR2Sync();
+  }
+
+  private async initR2Sync() {
+    if (!isR2Configured()) return;
+    try {
+      const r2Data = await loadAllDataFromR2();
+      if (r2Data) {
+        this.data = {
+          settings: { ...this.data.settings, ...(r2Data.settings || {}) },
+          partners: this.data.partners.map((lp) => {
+            const rp = r2Data.partners?.find((p: any) => p.id === lp.id);
+            return rp ? { ...lp, ...rp, avatar: lp.avatar || rp.avatar } : lp;
+          }),
+          countdowns: mergeListsById(this.data.countdowns, r2Data.countdowns),
+          memories: mergeListsById(this.data.memories, r2Data.memories),
+          notes: mergeListsById(this.data.notes, r2Data.notes),
+          bucketList: mergeListsById(this.data.bucketList, r2Data.bucketList),
+          loveJar: mergeListsById(this.data.loveJar, r2Data.loveJar),
+          timeline: mergeListsById(this.data.timeline, r2Data.timeline),
+          nicknames: mergeListsById(this.data.nicknames, r2Data.nicknames),
+          insideJokes: mergeListsById(this.data.insideJokes, r2Data.insideJokes),
+          comfortDoors: mergeListsById(this.data.comfortDoors, r2Data.comfortDoors),
+          futureDreams: mergeListsById(this.data.futureDreams, r2Data.futureDreams)
+        };
+        this.notify();
+      }
+    } catch (e) {
+      console.warn('R2 boot sync note:', e);
+    }
   }
 
   private async hydrateMediaFromIndexedDB() {
@@ -348,6 +379,7 @@ export class CoupleStore {
     }
     this.notify();
     this.syncToFirebase();
+    saveAllDataToR2(this.data);
   }
 
   private notify() {

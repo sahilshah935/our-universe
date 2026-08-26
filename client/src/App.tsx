@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import React, { useState } from 'react';
+import { AuthProvider } from './context/AuthContext';
 import { SoundProvider } from './context/SoundContext';
 import { LoveToastProvider } from './context/LoveToastContext';
 import { SocketProvider } from './context/SocketContext';
@@ -10,6 +10,7 @@ import { LoveJarModal } from './components/LoveJarModal';
 import { ProfileModal } from './components/ProfileModal';
 import { FirebaseSettingsModal } from './components/FirebaseSettingsModal';
 import { LogoSettingsModal } from './components/LogoSettingsModal';
+import { CloudflareR2Modal } from './components/CloudflareR2Modal';
 import { DashboardView } from './pages/DashboardView';
 import { ScrapbookView } from './pages/ScrapbookView';
 import { ComfortSanctuary } from './components/ComfortSanctuary';
@@ -19,7 +20,6 @@ import { RelationshipTimeline as TimelineView } from './components/RelationshipT
 import { JournalView } from './pages/JournalView';
 import { BucketListView } from './pages/BucketListView';
 import { CustomRoulette as DateRouletteView } from './components/CustomRoulette';
-import { coupleStore } from './services/store';
 import { Heart } from 'lucide-react';
 
 const MainApp: React.FC = () => {
@@ -29,6 +29,7 @@ const MainApp: React.FC = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
   const [isLogoModalOpen, setIsLogoModalOpen] = useState(false);
+  const [isR2ModalOpen, setIsR2ModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col selection:bg-rose-200 selection:text-rose-900">
@@ -44,6 +45,7 @@ const MainApp: React.FC = () => {
         onOpenLoveJar={() => setIsLoveJarOpen(true)}
         onOpenFirebaseModal={() => setIsFirebaseModalOpen(true)}
         onOpenLogoModal={() => setIsLogoModalOpen(true)}
+        onOpenR2Modal={() => setIsR2ModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -78,6 +80,11 @@ const MainApp: React.FC = () => {
       <LogoSettingsModal
         isOpen={isLogoModalOpen}
         onClose={() => setIsLogoModalOpen(false)}
+      />
+
+      <CloudflareR2Modal
+        isOpen={isR2ModalOpen}
+        onClose={() => setIsR2ModalOpen(false)}
       />
 
       {/* Real-time Love Touch Receiver Experience */}

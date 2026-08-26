@@ -1,24 +1,34 @@
 import { saveMediaItem } from './imageDb';
+import { isR2Configured, uploadImageToR2 } from './r2Storage';
 
 /**
  * Universal Permanent Image Storage for Our Universe
- * 1. Compresses photo into clean WebP.
- * 2. Saves to browser IndexedDB (500MB+ storage capacity) so it never disappears on refresh.
- * 3. Attempts to upload to free cloud hosting (ImgBB) for multi-device sync without any paid plan.
+ * 1. If Cloudflare R2 is configured, uploads directly to your Cloudflare R2 bucket.
+ * 2. Otherwise uploads to ImgBB Free Cloud and backs up to browser IndexedDB (500MB+).
  */
 export async function uploadImage(file: File): Promise<string> {
+  // 1. Try Cloudflare R2 first if configured
+  if (isR2Configured()) {
+    try {
+      const r2Url = await uploadImageToR2(file);
+      if (r2Url) {
+        return r2Url;
+      }
+    } catch (err) {
+      console.warn('Cloudflare R2 upload attempt error, falling back:', err);
+    }
+  }
+
+  // 2. Local WebP compression & IndexedDB backup
   const localDataUrl = await compressToDataUrl(file);
   const mediaId = 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-
-  // Always save locally to IndexedDB first
   await saveMediaItem(mediaId, localDataUrl);
 
-  // Try cloud upload (free ImgBB service)
+  // 3. Try free cloud hosting
   try {
     const formData = new FormData();
     formData.append('image', file);
     
-    // Free couple media upload key
     const res = await fetch('https://api.imgbb.com/1/upload?key=6d207e02198a847aa5a0a0330f4029c2', {
       method: 'POST',
       body: formData
