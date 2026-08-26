@@ -1,13 +1,27 @@
 import { saveMediaItem } from './imageDb';
+import { isCloudinaryConfigured, uploadImageToCloudinary } from './cloudinary';
 import { isR2Configured, uploadImageToR2 } from './r2Storage';
 
 /**
  * Universal Permanent Image Storage for Our Universe
- * 1. If Cloudflare R2 is configured, uploads directly to your Cloudflare R2 bucket.
- * 2. Otherwise uploads to ImgBB Free Cloud and backs up to browser IndexedDB (500MB+).
+ * 1. Prioritizes Cloudinary if configured.
+ * 2. Tries Cloudflare R2 if configured.
+ * 3. Falls back to Free Cloud (ImgBB) + Local IndexedDB (500MB+).
  */
 export async function uploadImage(file: File): Promise<string> {
-  // 1. Try Cloudflare R2 first if configured
+  // 1. Try Cloudinary first if configured
+  if (isCloudinaryConfigured()) {
+    try {
+      const cldUrl = await uploadImageToCloudinary(file);
+      if (cldUrl) {
+        return cldUrl;
+      }
+    } catch (err) {
+      console.warn('Cloudinary upload attempt error, falling back:', err);
+    }
+  }
+
+  // 2. Try Cloudflare R2 if configured
   if (isR2Configured()) {
     try {
       const r2Url = await uploadImageToR2(file);
@@ -19,12 +33,12 @@ export async function uploadImage(file: File): Promise<string> {
     }
   }
 
-  // 2. Local WebP compression & IndexedDB backup
+  // 3. Local WebP compression & IndexedDB backup
   const localDataUrl = await compressToDataUrl(file);
   const mediaId = 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
   await saveMediaItem(mediaId, localDataUrl);
 
-  // 3. Try free cloud hosting
+  // 4. Try free cloud hosting (ImgBB)
   try {
     const formData = new FormData();
     formData.append('image', file);

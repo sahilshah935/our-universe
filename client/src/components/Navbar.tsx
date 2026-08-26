@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Sparkles, Star, Edit3, Cloud } from 'lucide-react';
+import { Heart, Sparkles, Star, Edit3, Cloud, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { isFirebaseConnected } from '../services/firebase';
 import { isR2Configured } from '../services/r2Storage';
+import { isCloudinaryConfigured } from '../services/cloudinary';
 import { coupleStore, SiteSettings } from '../services/store';
 import { motion } from 'framer-motion';
 
@@ -15,6 +16,7 @@ interface NavbarProps {
   onOpenFirebaseModal: () => void;
   onOpenLogoModal: () => void;
   onOpenR2Modal: () => void;
+  onOpenCloudinaryModal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -25,11 +27,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenLoveJar,
   onOpenFirebaseModal,
   onOpenLogoModal,
-  onOpenR2Modal
+  onOpenR2Modal,
+  onOpenCloudinaryModal
 }) => {
   const { currentPartner, otherPartner, switchPartner } = useAuth();
   const firebaseConnected = isFirebaseConnected();
   const r2Connected = isR2Configured();
+  const cldConnected = isCloudinaryConfigured();
   const [settings, setSettings] = useState<SiteSettings>(() => coupleStore.getSettings());
 
   useEffect(() => {
@@ -67,7 +71,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {settings.title || 'Us'} <span className="text-rose-500">&bull;</span> {settings.subtitle || 'Couple Hub'}
                 </span>
               </div>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={onOpenCloudinaryModal}
+                  className="flex items-center gap-1 text-[11px] text-stone-500 font-medium hover:text-sky-600 transition cursor-pointer"
+                  title="Configure Cloudinary HD Photo Storage"
+                >
+                  <ImageIcon size={12} className={cldConnected ? 'text-sky-500' : 'text-stone-400'} />
+                  <span>{cldConnected ? 'Cloudinary Active 📸' : 'Connect Cloudinary 📸'}</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={onOpenR2Modal}
@@ -75,7 +89,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   title="Configure Cloudflare R2 Cloud Storage"
                 >
                   <Cloud size={12} className={r2Connected ? 'text-orange-500' : 'text-stone-400'} />
-                  <span>{r2Connected ? 'Cloudflare R2 Active' : 'Configure Cloudflare R2'}</span>
+                  <span>{r2Connected ? 'R2 Active ☁️' : 'R2 Cloud ☁️'}</span>
                 </button>
               </div>
             </div>
