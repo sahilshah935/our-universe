@@ -5,6 +5,7 @@ import { Note } from '../types';
 import { coupleStore } from '../services/store';
 import { useAuth } from '../context/AuthContext';
 import { useSound } from '../context/SoundContext';
+import { useLoveToast } from '../context/LoveToastContext';
 
 const NOTE_COLORS = [
   { id: 'yellow', bg: 'bg-amber-100', border: 'border-amber-200', text: 'text-amber-900' },
@@ -29,9 +30,15 @@ export const PostItBoard: React.FC = () => {
     return unsubscribe;
   }, []);
 
+  const { showLoveWarning, showLoveSuccess } = useLoveToast();
+
   const handleAddPostIt = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newContent.trim() || !currentPartner) return;
+    if (!newContent.trim()) {
+      showLoveWarning('Please write something cute on the sticky note first, my love! 📌', '🥺');
+      return;
+    }
+    if (!currentPartner) return;
 
     coupleStore.addNote({
       content: newContent.trim(),
@@ -45,6 +52,7 @@ export const PostItBoard: React.FC = () => {
     });
 
     playSparkle();
+    showLoveSuccess('Love note pinned to the fridge! 📌💖', '✨');
     setNewContent('');
     setIsAdding(false);
   };
@@ -81,7 +89,7 @@ export const PostItBoard: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           className="p-5 rounded-2xl bg-white border-2 border-rose-200 shadow-xl max-w-md"
         >
-          <form onSubmit={handleAddPostIt} className="space-y-3">
+          <form onSubmit={handleAddPostIt} noValidate className="space-y-3">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xs font-bold text-stone-700">Pick Note Color:</span>
               <div className="flex gap-2">

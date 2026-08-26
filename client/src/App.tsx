@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SoundProvider } from './context/SoundContext';
+import { LoveToastProvider } from './context/LoveToastContext';
 import { SocketProvider } from './context/SocketContext';
 import { Navbar } from './components/Navbar';
 import { HeartShower } from './components/HeartShower';
@@ -142,9 +143,11 @@ export function App() {
   return (
     <AuthProvider>
       <SoundProvider>
-        <SocketProvider>
-          <MainApp />
-        </SocketProvider>
+        <LoveToastProvider>
+          <SocketProvider>
+            <MainApp />
+          </SocketProvider>
+        </LoveToastProvider>
       </SoundProvider>
     </AuthProvider>
   );

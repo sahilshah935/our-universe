@@ -3,6 +3,7 @@ import { BucketListItem } from '../types';
 import { coupleStore } from '../services/store';
 import { useAuth } from '../context/AuthContext';
 import { useSound } from '../context/SoundContext';
+import { useLoveToast } from '../context/LoveToastContext';
 import { CheckCircle2, Circle, Plus, Trash2, Award, Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -47,9 +48,15 @@ export const BucketListView: React.FC = () => {
     }
   };
 
+  const { showLoveWarning, showLoveSuccess } = useLoveToast();
+
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim() || !currentPartner) return;
+    if (!newTitle.trim()) {
+      showLoveWarning('Please enter a dream or goal for our couple bucket list, my love! 🌟', '🥺');
+      return;
+    }
+    if (!currentPartner) return;
 
     coupleStore.addBucketItem({
       title: newTitle.trim(),
@@ -57,6 +64,7 @@ export const BucketListView: React.FC = () => {
       addedById: currentPartner.id
     });
 
+    showLoveSuccess('Goal added to our dream bucket list! Can’t wait to check it off with you ✨', '🎉');
     setNewTitle('');
     setIsAdding(false);
     playSparkle();
@@ -141,7 +149,7 @@ export const BucketListView: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           className="p-5 rounded-2xl bg-white border-2 border-rose-200 shadow-xl max-w-lg"
         >
-          <form onSubmit={handleAdd} className="space-y-3">
+          <form onSubmit={handleAdd} noValidate className="space-y-3">
             <div>
               <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Goal / Dream</label>
               <input

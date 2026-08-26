@@ -5,6 +5,7 @@ import { NicknameItem } from '../types';
 import { coupleStore } from '../services/store';
 import { useAuth } from '../context/AuthContext';
 import { useSound } from '../context/SoundContext';
+import { useLoveToast } from '../context/LoveToastContext';
 import confetti from 'canvas-confetti';
 
 export const NicknameWall: React.FC = () => {
@@ -27,9 +28,19 @@ export const NicknameWall: React.FC = () => {
     return unsubscribe;
   }, []);
 
+  const { showLoveWarning, showLoveSuccess } = useLoveToast();
+
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !explanation.trim() || !currentPartner) return;
+    if (!name.trim()) {
+      showLoveWarning('Please enter the cute nickname first, my love! 🏷️', '🥺');
+      return;
+    }
+    if (!explanation.trim()) {
+      showLoveWarning('Please write a cute little story/explanation for this nickname! 💖', '✨');
+      return;
+    }
+    if (!currentPartner) return;
 
     coupleStore.addNickname({
       forPartnerId: forPartner,
@@ -42,6 +53,7 @@ export const NicknameWall: React.FC = () => {
 
     playSparkle();
     confetti({ particleCount: 50, spread: 60 });
+    showLoveSuccess('Nickname added to our wall with love! 💖🎉', '✨');
     setName('');
     setExplanation('');
     setIsAdding(false);
@@ -170,7 +182,7 @@ export const NicknameWall: React.FC = () => {
                 </p>
               </div>
 
-              <form onSubmit={handleAdd} className="space-y-4">
+              <form onSubmit={handleAdd} noValidate className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Nickname</label>

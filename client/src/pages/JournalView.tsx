@@ -3,6 +3,7 @@ import { Note } from '../types';
 import { coupleStore } from '../services/store';
 import { useAuth } from '../context/AuthContext';
 import { useSound } from '../context/SoundContext';
+import { useLoveToast } from '../context/LoveToastContext';
 import { PostItBoard } from '../components/PostItBoard';
 import { TimeCapsuleModal } from '../components/TimeCapsuleModal';
 import { Heart, Lock, Unlock, Plus, Trash2 } from 'lucide-react';
@@ -28,9 +29,15 @@ export const JournalView: React.FC = () => {
     return unsubscribe;
   }, []);
 
+  const { showLoveWarning, showLoveSuccess } = useLoveToast();
+
   const handleCreateLetter = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || !currentPartner) return;
+    if (!content.trim()) {
+      showLoveWarning('Please pour your sweet feelings into the letter first, my love! 💌', '🥺');
+      return;
+    }
+    if (!currentPartner) return;
 
     coupleStore.addNote({
       title: title.trim() || undefined,
@@ -43,6 +50,7 @@ export const JournalView: React.FC = () => {
     });
 
     playSparkle();
+    showLoveSuccess('Love letter safely saved in our journal! 💌❤️', '✨');
     setIsAddingLetter(false);
     setTitle('');
     setContent('');
@@ -141,7 +149,7 @@ export const JournalView: React.FC = () => {
                     Write A Love Journal Entry ✍️
                   </h3>
 
-                  <form onSubmit={handleCreateLetter} className="space-y-4">
+                  <form onSubmit={handleCreateLetter} noValidate className="space-y-4">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Title</label>

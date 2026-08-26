@@ -5,6 +5,7 @@ import { uploadMedia } from '../services/firebase';
 import { PolaroidCard } from '../components/PolaroidCard';
 import { useAuth } from '../context/AuthContext';
 import { useSound } from '../context/SoundContext';
+import { useLoveToast } from '../context/LoveToastContext';
 import { Plus, Camera, X, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -43,6 +44,8 @@ export const ScrapbookView: React.FC = () => {
     return unsubscribe;
   }, []);
 
+  const { showLoveWarning, showLoveSuccess } = useLoveToast();
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -51,8 +54,10 @@ export const ScrapbookView: React.FC = () => {
     try {
       const url = await uploadMedia(file);
       setImageUrl(url);
+      showLoveSuccess('Photo loaded beautifully! 📸', '✨');
     } catch (err) {
       console.error('File upload failed:', err);
+      showLoveWarning('Failed to upload photo, please try again my love! 🥺');
     } finally {
       setIsUploading(false);
     }
@@ -60,7 +65,15 @@ export const ScrapbookView: React.FC = () => {
 
   const handleCreateMemory = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !imageUrl || !currentPartner) return;
+    if (!imageUrl) {
+      showLoveWarning('Please pick or upload a cute photo first, darling! 📷', '🥺');
+      return;
+    }
+    if (!title.trim()) {
+      showLoveWarning('Please give this beautiful memory a title, my love! 💖', '✨');
+      return;
+    }
+    if (!currentPartner) return;
 
     coupleStore.addMemory({
       title: title.trim(),
@@ -76,6 +89,7 @@ export const ScrapbookView: React.FC = () => {
 
     playSparkle();
     confetti({ particleCount: 50, spread: 60 });
+    showLoveSuccess('Memory pinned to our scrapbook forever! 📌❤️', '🎉');
     setIsAddingMemory(false);
 
     // Reset form
@@ -182,7 +196,7 @@ export const ScrapbookView: React.FC = () => {
                 </p>
               </div>
 
-              <form onSubmit={handleCreateMemory} className="space-y-4">
+              <form onSubmit={handleCreateMemory} noValidate className="space-y-4">
                 {/* Photo Upload or URL */}
                 <div>
                   <label className="block text-xs font-bold text-stone-700 uppercase mb-1">

@@ -4,6 +4,7 @@ import { Milestone, FutureDreamItem } from '../types';
 import { coupleStore } from '../services/store';
 import { useAuth } from '../context/AuthContext';
 import { useSound } from '../context/SoundContext';
+import { useLoveToast } from '../context/LoveToastContext';
 import { uploadMedia } from '../services/firebase';
 import { Sparkles, Plus, Calendar, Heart, Camera, Compass, Trash2, ArrowDown, Star, MapPin } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -38,6 +39,8 @@ export const RelationshipTimeline: React.FC = () => {
     return unsubscribe;
   }, []);
 
+  const { showLoveWarning, showLoveSuccess } = useLoveToast();
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -45,8 +48,10 @@ export const RelationshipTimeline: React.FC = () => {
     try {
       const url = await uploadMedia(file);
       setPhotoUrl(url);
+      showLoveSuccess('Story photo uploaded! 📸', '✨');
     } catch (err) {
       console.error(err);
+      showLoveWarning('Failed to upload photo, my love! 🥺');
     } finally {
       setIsUploading(false);
     }
@@ -54,7 +59,15 @@ export const RelationshipTimeline: React.FC = () => {
 
   const handleAddStep = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !date || !currentPartner) return;
+    if (!title.trim()) {
+      showLoveWarning('Please enter a milestone title for our story, darling! 🗺️', '🥺');
+      return;
+    }
+    if (!date) {
+      showLoveWarning('Please pick the special date when this moment happened, my love! 📅', '✨');
+      return;
+    }
+    if (!currentPartner) return;
 
     coupleStore.addTimelineMilestone({
       title: title.trim(),
@@ -66,6 +79,7 @@ export const RelationshipTimeline: React.FC = () => {
 
     playSparkle();
     confetti({ particleCount: 50, spread: 60 });
+    showLoveSuccess('Story chapter pinned to our relationship timeline! 🗺️💖', '🎉');
     setTitle('');
     setDate('');
     setDescription('');
@@ -75,7 +89,11 @@ export const RelationshipTimeline: React.FC = () => {
 
   const handleAddDream = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!dreamTitle.trim() || !currentPartner) return;
+    if (!dreamTitle.trim()) {
+      showLoveWarning('Please write your future dream for us, my love! 🌟', '🥺');
+      return;
+    }
+    if (!currentPartner) return;
 
     coupleStore.addFutureDream({
       title: dreamTitle.trim(),
@@ -86,6 +104,7 @@ export const RelationshipTimeline: React.FC = () => {
     });
 
     playSparkle();
+    showLoveSuccess('Future dream added to "The Next Chapter"! 🌟✨', '💖');
     setDreamTitle('');
     setDreamDesc('');
     setIsAddingDream(false);
@@ -261,7 +280,7 @@ export const RelationshipTimeline: React.FC = () => {
                 Add Timeline Milestone 💖
               </h3>
 
-              <form onSubmit={handleAddStep} className="space-y-4">
+              <form onSubmit={handleAddStep} noValidate className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Title</label>
@@ -360,7 +379,7 @@ export const RelationshipTimeline: React.FC = () => {
 
               <h3 className="text-xl font-bold font-serif-title mb-4">Add Future Dream ✨</h3>
 
-              <form onSubmit={handleAddDream} className="space-y-4">
+              <form onSubmit={handleAddDream} noValidate className="space-y-3">
                 <div className="grid grid-cols-4 gap-2">
                   <div className="col-span-1">
                     <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Emoji</label>

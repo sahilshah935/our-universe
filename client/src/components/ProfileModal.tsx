@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { X, Camera, Save } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSound } from '../context/SoundContext';
+import { useLoveToast } from '../context/LoveToastContext';
 import { uploadMedia } from '../services/firebase';
 
 export const ProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
@@ -11,6 +12,7 @@ export const ProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
 }) => {
   const { currentPartner, updateCurrentPartner } = useAuth();
   const { playSparkle } = useSound();
+  const { showLoveWarning, showLoveSuccess } = useLoveToast();
 
   const [name, setName] = useState('');
   const [nickname, setNickname] = useState('');
@@ -45,8 +47,10 @@ export const ProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
     try {
       const url = await uploadMedia(file);
       setAvatar(url);
+      showLoveSuccess('Looking gorgeous! Avatar uploaded ❤️', '✨');
     } catch (err) {
       console.error('Avatar upload failed:', err);
+      showLoveWarning('Oops my love, something went wrong uploading the photo 🥺');
     } finally {
       setIsUploading(false);
     }
@@ -54,21 +58,29 @@ export const ProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!name.trim()) {
+      showLoveWarning('Wait a second darling! Please tell me your lovely name 🥺', '💖');
+      return;
+    }
+
     setIsSaving(true);
     try {
       await updateCurrentPartner({
-        name,
-        nickname,
-        role,
-        bio,
-        status,
-        statusEmoji,
+        name: name.trim(),
+        nickname: nickname.trim(),
+        role: role.trim(),
+        bio: bio.trim(),
+        status: status.trim(),
+        statusEmoji: statusEmoji.trim() || '💖',
         avatar
       });
       playSparkle();
+      showLoveSuccess('Profile saved with so much love! 🥰', '🎉');
       onClose();
     } catch (err) {
       console.error(err);
+      showLoveWarning('Could not save changes right now, my love! 🥺');
     } finally {
       setIsSaving(false);
     }
@@ -101,7 +113,7 @@ export const ProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
           </p>
         </div>
 
-        <form onSubmit={handleSave} className="space-y-4">
+        <form onSubmit={handleSave} noValidate className="space-y-4">
           {/* Avatar Preview & Upload */}
           <div className="flex flex-col items-center">
             <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-rose-400 shadow-md group">
@@ -123,8 +135,8 @@ export const ProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Sahil / Asmi"
                 className="w-full p-2.5 text-xs rounded-xl border border-stone-200"
-                required
               />
             </div>
             <div>
@@ -133,6 +145,7 @@ export const ProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                 type="text"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
+                placeholder="e.g. BabyGirl / Supari"
                 className="w-full p-2.5 text-xs rounded-xl border border-stone-200"
               />
             </div>
@@ -176,6 +189,7 @@ export const ProfileModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
+              placeholder="Write a sweet quote that reminds you of us..."
               className="w-full p-2.5 text-xs rounded-xl border border-stone-200 resize-none"
               rows={2}
             />

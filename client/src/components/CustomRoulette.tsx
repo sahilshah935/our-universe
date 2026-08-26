@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Plus, Trash2, RotateCw, Trophy, RefreshCcw, Check, Heart, Disc } from 'lucide-react';
 import { useSound } from '../context/SoundContext';
+import { useLoveToast } from '../context/LoveToastContext';
 import confetti from 'canvas-confetti';
 
 const WHEEL_COLORS = [
@@ -53,17 +54,23 @@ export const CustomRoulette: React.FC = () => {
     localStorage.setItem('asmi_custom_roulette_items', JSON.stringify(items));
   }, [items]);
 
+  const { showLoveWarning, showLoveSuccess } = useLoveToast();
+
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newItemText.trim()) return;
+    if (!newItemText.trim()) {
+      showLoveWarning('Please enter a choice/option for the wheel, my love! 🎡', '🥺');
+      return;
+    }
     setItems((prev) => [...prev, newItemText.trim()]);
+    showLoveSuccess(`Added "${newItemText.trim()}" to the wheel! ✨`, '🎡');
     setNewItemText('');
     playSparkle();
   };
 
   const handleRemoveItem = (index: number) => {
     if (items.length <= 2) {
-      alert('You need at least 2 items on the wheel to spin!');
+      showLoveWarning('The wheel needs at least 2 choices to spin, darling! 🎡', '💖');
       return;
     }
     playHeartPop();
@@ -268,7 +275,7 @@ export const CustomRoulette: React.FC = () => {
             </div>
 
             {/* Add Item Form */}
-            <form onSubmit={handleAddItem} className="flex gap-2 mb-4">
+            <form onSubmit={handleAddItem} noValidate className="flex gap-2 mb-4">
               <input
                 type="text"
                 value={newItemText}

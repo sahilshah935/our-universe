@@ -5,6 +5,7 @@ import { ComfortDoor } from '../types';
 import { coupleStore } from '../services/store';
 import { useAuth } from '../context/AuthContext';
 import { useSound } from '../context/SoundContext';
+import { useLoveToast } from '../context/LoveToastContext';
 import { uploadMedia } from '../services/firebase';
 import confetti from 'canvas-confetti';
 
@@ -40,6 +41,8 @@ export const ComfortSanctuary: React.FC = () => {
     confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
   };
 
+  const { showLoveWarning, showLoveSuccess } = useLoveToast();
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -48,8 +51,10 @@ export const ComfortSanctuary: React.FC = () => {
     try {
       const url = await uploadMedia(file);
       setMemeUrl(url);
+      showLoveSuccess('Attached photo/meme successfully! 📸', '✨');
     } catch (err) {
       console.error(err);
+      showLoveWarning('Failed to upload photo, my love! 🥺');
     } finally {
       setIsUploading(false);
     }
@@ -57,7 +62,15 @@ export const ComfortSanctuary: React.FC = () => {
 
   const handleCreateDoor = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !letter.trim() || !currentPartner) return;
+    if (!title.trim()) {
+      showLoveWarning("Please enter a door theme title (e.g. Open When You're Sad)! 🚪", '🥺');
+      return;
+    }
+    if (!letter.trim()) {
+      showLoveWarning('Please write a comforting letter for when this door is opened, my love! 💌', '💖');
+      return;
+    }
+    if (!currentPartner) return;
 
     coupleStore.addComfortDoor({
       title: title.trim(),
@@ -73,6 +86,7 @@ export const ComfortSanctuary: React.FC = () => {
 
     playSparkle();
     confetti({ particleCount: 50, spread: 70 });
+    showLoveSuccess('Comfort door created with love! 🚪❤️', '✨');
     setTitle('');
     setSubtitle('');
     setLetter('');
@@ -303,7 +317,7 @@ export const ComfortSanctuary: React.FC = () => {
                 </p>
               </div>
 
-              <form onSubmit={handleCreateDoor} className="space-y-4">
+              <form onSubmit={handleCreateDoor} noValidate className="space-y-4">
                 <div className="grid grid-cols-4 gap-2">
                   <div className="col-span-1">
                     <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Emoji</label>

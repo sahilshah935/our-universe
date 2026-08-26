@@ -5,6 +5,7 @@ import { SiteSettings } from '../types';
 import { coupleStore } from '../services/store';
 import { uploadMedia } from '../services/firebase';
 import { useSound } from '../context/SoundContext';
+import { useLoveToast } from '../context/LoveToastContext';
 import confetti from 'canvas-confetti';
 
 const LOGO_EMOJIS = ['💖', '🧸', '👑', '✨', '🌸', '🍓', '💍', '☕', '🌟', '🍕', '🚀', '💌', '🥐', '🐱', '🐶'];
@@ -34,6 +35,8 @@ export const LogoSettingsModal: React.FC<{ isOpen: boolean; onClose: () => void 
 
   if (!isOpen) return null;
 
+  const { showLoveWarning, showLoveSuccess } = useLoveToast();
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -43,8 +46,10 @@ export const LogoSettingsModal: React.FC<{ isOpen: boolean; onClose: () => void 
       const url = await uploadMedia(file);
       setLogoImageUrl(url);
       setLogoType('image');
+      showLoveSuccess('Logo image uploaded beautifully! 🎨', '✨');
     } catch (err) {
       console.error('Logo upload error:', err);
+      showLoveWarning('Failed to upload logo image, my love! 🥺');
     } finally {
       setIsUploading(false);
     }
@@ -52,9 +57,18 @@ export const LogoSettingsModal: React.FC<{ isOpen: boolean; onClose: () => void 
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!title.trim()) {
+      showLoveWarning('Please enter a website title (e.g. Our Universe), my love! 🌌', '🥺');
+      return;
+    }
+    if (!subtitle.trim()) {
+      showLoveWarning('Please enter a subtitle for our brand, darling! 💖', '✨');
+      return;
+    }
+
     coupleStore.updateSettings({
-      title: title.trim() || 'Us',
-      subtitle: subtitle.trim() || 'Couple Hub',
+      title: title.trim(),
+      subtitle: subtitle.trim(),
       logoType,
       logoEmoji,
       logoImageUrl,
@@ -66,6 +80,7 @@ export const LogoSettingsModal: React.FC<{ isOpen: boolean; onClose: () => void 
 
     playSparkle();
     confetti({ particleCount: 50, spread: 60 });
+    showLoveSuccess('Brand & Logo updated live across the universe! 🎨✨', '🎉');
     onClose();
   };
 
@@ -110,7 +125,7 @@ export const LogoSettingsModal: React.FC<{ isOpen: boolean; onClose: () => void 
           </p>
         </div>
 
-        <form onSubmit={handleSave} className="space-y-4">
+        <form onSubmit={handleSave} noValidate className="space-y-4">
           {/* Logo Type Selector */}
           <div className="flex items-center gap-2 bg-stone-100 p-1 rounded-2xl">
             <button

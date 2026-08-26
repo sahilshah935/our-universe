@@ -5,6 +5,7 @@ import { LoveJarWish } from '../types';
 import { coupleStore } from '../services/store';
 import { useAuth } from '../context/AuthContext';
 import { useSound } from '../context/SoundContext';
+import { useLoveToast } from '../context/LoveToastContext';
 import confetti from 'canvas-confetti';
 
 export const LoveJarModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
@@ -31,9 +32,15 @@ export const LoveJarModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
     }, 450);
   };
 
+  const { showLoveWarning, showLoveSuccess } = useLoveToast();
+
   const handleAddWish = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !currentPartner) return;
+    if (!newMessage.trim()) {
+      showLoveWarning('Please write a sweet reason or compliment to fold into the star! ⭐', '🥺');
+      return;
+    }
+    if (!currentPartner) return;
 
     coupleStore.addLoveJarWish({
       message: newMessage.trim(),
@@ -41,6 +48,7 @@ export const LoveJarModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
       authorId: currentPartner.id
     });
 
+    showLoveSuccess('Origami star folded & dropped into the love jar! ⭐💖', '✨');
     setNewMessage('');
     setShowAddForm(false);
     playSparkle();
@@ -137,7 +145,7 @@ export const LoveJarModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
               <Plus size={14} /> Drop a new reason into the jar
             </button>
           ) : (
-            <form onSubmit={handleAddWish} className="p-3 bg-white rounded-2xl border border-rose-200 text-left space-y-2.5 mt-3">
+            <form onSubmit={handleAddWish} noValidate className="p-3 bg-white rounded-2xl border border-rose-200 text-left space-y-2.5 mt-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-stone-700">Add a Reason or Compliment</span>
                 <select

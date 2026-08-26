@@ -5,6 +5,7 @@ import { InsideJokeItem } from '../types';
 import { coupleStore } from '../services/store';
 import { useAuth } from '../context/AuthContext';
 import { useSound } from '../context/SoundContext';
+import { useLoveToast } from '../context/LoveToastContext';
 import confetti from 'canvas-confetti';
 
 export const InsideJokeDictionary: React.FC = () => {
@@ -28,9 +29,23 @@ export const InsideJokeDictionary: React.FC = () => {
     return unsubscribe;
   }, []);
 
+  const { showLoveWarning, showLoveSuccess } = useLoveToast();
+
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!word.trim() || !definition.trim() || !example.trim() || !currentPartner) return;
+    if (!word.trim()) {
+      showLoveWarning('Please enter the hilarious inside joke word/phrase, my love! 😂', '✨');
+      return;
+    }
+    if (!definition.trim()) {
+      showLoveWarning('Please add the funny definition for our dictionary, darling! 📖', '🥺');
+      return;
+    }
+    if (!example.trim()) {
+      showLoveWarning('Please write an in-a-sentence example (no context for outsiders)! 🤭', '💖');
+      return;
+    }
+    if (!currentPartner) return;
 
     coupleStore.addInsideJoke({
       word: word.trim(),
@@ -44,6 +59,7 @@ export const InsideJokeDictionary: React.FC = () => {
 
     playSparkle();
     confetti({ particleCount: 40, spread: 50 });
+    showLoveSuccess('Inside joke added to our private dictionary! 😂📖', '🎉');
     setWord('');
     setPronunciation('');
     setDefinition('');
@@ -196,7 +212,7 @@ export const InsideJokeDictionary: React.FC = () => {
                 </p>
               </div>
 
-              <form onSubmit={handleAdd} className="space-y-4">
+              <form onSubmit={handleAdd} noValidate className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-stone-700 uppercase mb-1">The Word / Term</label>

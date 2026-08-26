@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLoveToast } from '../context/LoveToastContext';
 import { LiveTicker } from '../components/LiveTicker';
 import { CountdownCard } from '../components/CountdownCard';
 import { PolaroidCard } from '../components/PolaroidCard';
@@ -44,18 +45,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const partner1 = storedPartners.find((p) => p.id === 'partner1') || partners[0];
   const partner2 = storedPartners.find((p) => p.id === 'partner2') || partners[1];
 
+  const { showLoveWarning, showLoveSuccess } = useLoveToast();
+
   const handleAddCountdown = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle || !newDate) return;
+    if (!newTitle.trim()) {
+      showLoveWarning('Please enter a cute title for our countdown, my love! ⏳', '💖');
+      return;
+    }
+    if (!newDate) {
+      showLoveWarning('Please pick a special date and time to count down to, darling! 📅', '✨');
+      return;
+    }
 
     coupleStore.addCountdown({
       title: newTitle.trim(),
       targetDate: new Date(newDate).toISOString(),
       category: newCategory,
-      emoji: newEmoji,
+      emoji: newEmoji.trim() || '💖',
       description: newDesc.trim() || undefined
     });
 
+    showLoveSuccess('Countdown started! Counting down every second with you ⏰', '🎉');
     setNewTitle('');
     setNewDate('');
     setNewDesc('');
@@ -148,7 +159,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             animate={{ opacity: 1, y: 0 }}
             className="p-5 rounded-2xl bg-white border-2 border-rose-200 shadow-xl max-w-lg"
           >
-            <form onSubmit={handleAddCountdown} className="space-y-3">
+            <form onSubmit={handleAddCountdown} noValidate className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Title</label>
