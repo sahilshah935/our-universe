@@ -35,6 +35,13 @@ function getNextBirthdayDate(month: number, day: number, hour = 0, min = 0): str
   return new Date(year, month - 1, day, hour, min, 0).toISOString();
 }
 
+/**
+ * Strips all undefined fields so Firestore writes NEVER fail
+ */
+function cleanFirestoreData<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj, (_, v) => (v === undefined ? null : v)));
+}
+
 const DEFAULT_SETTINGS: SiteSettings = {
   title: 'Our Universe',
   subtitle: 'Sahil & Asmi',
@@ -249,7 +256,7 @@ export class CoupleStore {
   }
 
   private startPeriodicSync() {
-    // 2-second synchronization heartbeat across devices
+    // 2-second real-time cross-device heartbeat
     setInterval(() => {
       this.pollFirebase();
     }, 2000);
@@ -359,7 +366,6 @@ export class CoupleStore {
       const mediaMap = await getAllMediaItems();
       let hasUpdates = false;
 
-      // Hydrate partner avatars if local avatar is missing
       if (mediaMap['partner_avatar_partner1'] && this.data.partners[0] && !this.data.partners[0].avatar) {
         this.data.partners[0].avatar = mediaMap['partner_avatar_partner1'];
         hasUpdates = true;
@@ -369,7 +375,6 @@ export class CoupleStore {
         hasUpdates = true;
       }
 
-      // Hydrate memories
       const updatedMemories = this.data.memories.map((m) => {
         if (mediaMap[m.id] && !m.imageUrl) {
           hasUpdates = true;
@@ -452,7 +457,7 @@ export class CoupleStore {
   private async initFirebaseSync() {
     if (!firestoreDb) return;
     try {
-      // 1. Listen to dedicated memories collection
+      // 1. Dedicated memories collection listener
       const memsColl = collection(firestoreDb, 'couple_memories');
       onSnapshot(memsColl, (snap) => {
         if (!snap.empty) {
@@ -466,7 +471,7 @@ export class CoupleStore {
         }
       });
 
-      // 2. Listen to dedicated partners collection
+      // 2. Dedicated partners collection listener
       const partnersColl = collection(firestoreDb, 'couple_partners');
       onSnapshot(partnersColl, (snap) => {
         if (!snap.empty) {
@@ -482,7 +487,7 @@ export class CoupleStore {
         }
       });
 
-      // 3. Listen to main couple hub data
+      // 3. Main couple hub document listener
       const docRef = doc(firestoreDb, 'couple_hub', 'main_data');
       onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
@@ -491,7 +496,7 @@ export class CoupleStore {
             this.applyRemoteData(remote);
           }
         } else {
-          setDoc(docRef, this.data, { merge: true });
+          setDoc(docRef, cleanFirestoreData(this.data), { merge: true });
         }
       });
     } catch (err) {
@@ -503,7 +508,7 @@ export class CoupleStore {
     if (!firestoreDb || this.isSyncingFromCloud) return;
     try {
       const docRef = doc(firestoreDb, 'couple_hub', 'main_data');
-      await setDoc(docRef, this.data, { merge: true });
+      await setDoc(docRef, cleanFirestoreData(this.data), { merge: true });
     } catch (err) {
       console.warn('Firestore write note:', err);
     }
@@ -532,7 +537,7 @@ export class CoupleStore {
       saveMediaItem('partner_avatar_' + id, updates.avatar);
     }
     if (firestoreDb) {
-      setDoc(doc(firestoreDb, 'couple_partners', id), updated, { merge: true }).catch(() => {});
+      setDoc(doc(firestoreDb, 'couple_partners', id), cleanFirestoreData(updated), { merge: true }).catch(() => {});
     }
     this.saveLocal();
     return updated;
@@ -564,6 +569,8 @@ export class CoupleStore {
   async addMemory(item: Omit<Memory, 'id' | 'likes' | 'createdAt'>): Promise<Memory> {
     const created: Memory = {
       ...item,
+      description: item.description || '',
+      location: item.location || '',
       id: 'mem_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
       likes: 0,
       createdAt: new Date().toISOString()
@@ -576,10 +583,11 @@ export class CoupleStore {
     this.data.memories = [created, ...this.data.memories.filter((m) => m.id !== created.id)];
     this.saveLocal();
 
-    // Save dedicated memory document in Firestore
+    // Save clean dedicated memory document in Firestore
     if (firestoreDb) {
       try {
-        await setDoc(doc(firestoreDb, 'couple_memories', created.id), created);
+        await setDoc(doc(firestoreDb, 'couple_memories', created.id), cleanFirestoreData(created));
+        console.log('✅ Memory saved to Firestore cloud successfully:', created.id);
       } catch (err) {
         console.warn('Memory cloud sync note:', err);
       }
