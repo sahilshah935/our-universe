@@ -77,14 +77,6 @@ const DEFAULT_PARTNERS: Partner[] = [
 
 const DEFAULT_COUNTDOWNS: Countdown[] = [
   {
-    id: 'cd_anniversary_2025',
-    title: 'Our 1 Year Anniversary 💍',
-    targetDate: '2025-03-13T00:00:00.000Z',
-    category: 'Anniversary',
-    emoji: '💖',
-    description: '365 days of laughs, warmth, and growing together.'
-  },
-  {
     id: 'cd_asmi_bday',
     title: "Asmi's Birthday 🎂",
     targetDate: getNextBirthdayDate(10, 16, 0, 0),
@@ -281,7 +273,7 @@ export class CoupleStore {
     this.data = {
       settings: { ...this.data.settings, ...(remote.settings || {}) },
       partners: mergedPartners.length > 0 ? mergedPartners : this.data.partners,
-      countdowns: remote.countdowns !== undefined ? remote.countdowns : this.data.countdowns,
+      countdowns: remote.countdowns !== undefined ? (remote.countdowns as any[]).filter((c) => c.id !== 'cd_anniversary_2025') : this.data.countdowns.filter((c) => c.id !== 'cd_anniversary_2025'),
       memories: this.data.memories,
       notes: remote.notes !== undefined ? remote.notes : this.data.notes,
       bucketList: remote.bucketList !== undefined ? remote.bucketList : this.data.bucketList,
@@ -351,7 +343,7 @@ export class CoupleStore {
         return {
           settings: parsed.settings || DEFAULT_SETTINGS,
           partners: parsed.partners || DEFAULT_PARTNERS,
-          countdowns: parsed.countdowns || DEFAULT_COUNTDOWNS,
+          countdowns: (parsed.countdowns || DEFAULT_COUNTDOWNS).filter((c: any) => c.id !== 'cd_anniversary_2025'),
           memories: (parsed.memories || []).filter((m: any) => m.id !== 'mem_1' && m.id !== 'mem_2'),
           notes: parsed.notes || [],
           bucketList: parsed.bucketList || [],
