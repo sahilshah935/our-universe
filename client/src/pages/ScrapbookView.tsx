@@ -63,7 +63,7 @@ export const ScrapbookView: React.FC = () => {
     }
   };
 
-  const handleCreateMemory = (e: React.FormEvent) => {
+  const handleCreateMemory = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (isUploading) {
@@ -83,7 +83,7 @@ export const ScrapbookView: React.FC = () => {
 
     const authorId = currentPartner?.id || 'partner1';
 
-    coupleStore.addMemory({
+    await coupleStore.addMemory({
       title: title.trim(),
       description: description.trim() || undefined,
       date: date || new Date().toISOString().split('T')[0],

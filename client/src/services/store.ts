@@ -207,6 +207,20 @@ const DEFAULT_FUTURE_DREAMS: FutureDreamItem[] = [
   }
 ];
 
+function mergeLists<T extends { id: string }>(localList: T[] = [], remoteList: T[] = []): T[] {
+  const map = new Map<string, T>();
+  for (const item of remoteList) {
+    if (item && item.id) map.set(item.id, item);
+  }
+  for (const item of localList) {
+    if (item && item.id) {
+      const existing = map.get(item.id);
+      map.set(item.id, existing ? { ...existing, ...item } : item);
+    }
+  }
+  return Array.from(map.values());
+}
+
 export class CoupleStore {
   private data: {
     settings: SiteSettings;
@@ -235,7 +249,7 @@ export class CoupleStore {
   }
 
   private startPeriodicSync() {
-    // 2-second real-time synchronization heartbeat across devices
+    // 2-second synchronization heartbeat across devices
     setInterval(() => {
       this.pollFirebase();
     }, 2000);
@@ -244,17 +258,7 @@ export class CoupleStore {
   private async pollFirebase() {
     if (!firestoreDb || this.isSyncingFromCloud) return;
     try {
-      // 1. Poll main_data
-      const docRef = doc(firestoreDb, 'couple_hub', 'main_data');
-      const snap = await getDoc(docRef);
-      if (snap.exists()) {
-        const remote = snap.data() as any;
-        if (remote) {
-          this.applyRemoteData(remote);
-        }
-      }
-
-      // 2. Poll dedicated memories collection
+      // 1. Dedicated memories collection
       const memsColl = collection(firestoreDb, 'couple_memories');
       const memsSnap = await getDocs(memsColl);
       if (!memsSnap.empty) {
@@ -263,14 +267,13 @@ export class CoupleStore {
           cloudMemories.push(d.data() as Memory);
         });
         if (cloudMemories.length > 0) {
-          // Sort newest first
           cloudMemories.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-          this.data.memories = cloudMemories;
+          this.data.memories = mergeLists(this.data.memories, cloudMemories);
           this.notify();
         }
       }
 
-      // 3. Poll dedicated partners collection
+      // 2. Dedicated partners collection
       const partnersColl = collection(firestoreDb, 'couple_partners');
       const partnersSnap = await getDocs(partnersColl);
       if (!partnersSnap.empty) {
@@ -286,8 +289,18 @@ export class CoupleStore {
           this.notify();
         }
       }
+
+      // 3. Main couple hub document
+      const docRef = doc(firestoreDb, 'couple_hub', 'main_data');
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const remote = snap.data() as any;
+        if (remote) {
+          this.applyRemoteData(remote);
+        }
+      }
     } catch {
-      // Quiet fail on network hiccups
+      // Quiet fail
     }
   }
 
@@ -309,16 +322,16 @@ export class CoupleStore {
     this.data = {
       settings: { ...this.data.settings, ...(remote.settings || {}) },
       partners: mergedPartners.length > 0 ? mergedPartners : this.data.partners,
-      countdowns: remote.countdowns !== undefined ? remote.countdowns : this.data.countdowns,
-      memories: remote.memories !== undefined ? remote.memories : this.data.memories,
-      notes: remote.notes !== undefined ? remote.notes : this.data.notes,
-      bucketList: remote.bucketList !== undefined ? remote.bucketList : this.data.bucketList,
-      loveJar: remote.loveJar !== undefined ? remote.loveJar : this.data.loveJar,
-      timeline: remote.timeline !== undefined ? remote.timeline : this.data.timeline,
-      nicknames: remote.nicknames !== undefined ? remote.nicknames : this.data.nicknames,
-      insideJokes: remote.insideJokes !== undefined ? remote.insideJokes : this.data.insideJokes,
-      comfortDoors: remote.comfortDoors !== undefined ? remote.comfortDoors : this.data.comfortDoors,
-      futureDreams: remote.futureDreams !== undefined ? remote.futureDreams : this.data.futureDreams
+      countdowns: remote.countdowns !== undefined ? mergeLists(this.data.countdowns, remote.countdowns) : this.data.countdowns,
+      memories: remote.memories && remote.memories.length > 0 ? mergeLists(this.data.memories, remote.memories) : this.data.memories,
+      notes: remote.notes !== undefined ? mergeLists(this.data.notes, remote.notes) : this.data.notes,
+      bucketList: remote.bucketList !== undefined ? mergeLists(this.data.bucketList, remote.bucketList) : this.data.bucketList,
+      loveJar: remote.loveJar !== undefined ? mergeLists(this.data.loveJar, remote.loveJar) : this.data.loveJar,
+      timeline: remote.timeline !== undefined ? mergeLists(this.data.timeline, remote.timeline) : this.data.timeline,
+      nicknames: remote.nicknames !== undefined ? mergeLists(this.data.nicknames, remote.nicknames) : this.data.nicknames,
+      insideJokes: remote.insideJokes !== undefined ? mergeLists(this.data.insideJokes, remote.insideJokes) : this.data.insideJokes,
+      comfortDoors: remote.comfortDoors !== undefined ? mergeLists(this.data.comfortDoors, remote.comfortDoors) : this.data.comfortDoors,
+      futureDreams: remote.futureDreams !== undefined ? mergeLists(this.data.futureDreams, remote.futureDreams) : this.data.futureDreams
     };
 
     try {
@@ -439,20 +452,7 @@ export class CoupleStore {
   private async initFirebaseSync() {
     if (!firestoreDb) return;
     try {
-      // 1. Listen to main couple hub data
-      const docRef = doc(firestoreDb, 'couple_hub', 'main_data');
-      onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const remote = docSnap.data() as any;
-          if (remote) {
-            this.applyRemoteData(remote);
-          }
-        } else {
-          setDoc(docRef, this.data, { merge: true });
-        }
-      });
-
-      // 2. Real-time dedicated memories collection listener
+      // 1. Listen to dedicated memories collection
       const memsColl = collection(firestoreDb, 'couple_memories');
       onSnapshot(memsColl, (snap) => {
         if (!snap.empty) {
@@ -461,12 +461,12 @@ export class CoupleStore {
             cloudMemories.push(d.data() as Memory);
           });
           cloudMemories.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-          this.data.memories = cloudMemories;
+          this.data.memories = mergeLists(this.data.memories, cloudMemories);
           this.notify();
         }
       });
 
-      // 3. Real-time dedicated partners collection listener
+      // 2. Listen to dedicated partners collection
       const partnersColl = collection(firestoreDb, 'couple_partners');
       onSnapshot(partnersColl, (snap) => {
         if (!snap.empty) {
@@ -479,6 +479,19 @@ export class CoupleStore {
             return cp ? { ...lp, ...cp, avatar: cp.avatar || lp.avatar } : lp;
           });
           this.notify();
+        }
+      });
+
+      // 3. Listen to main couple hub data
+      const docRef = doc(firestoreDb, 'couple_hub', 'main_data');
+      onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const remote = docSnap.data() as any;
+          if (remote) {
+            this.applyRemoteData(remote);
+          }
+        } else {
+          setDoc(docRef, this.data, { merge: true });
         }
       });
     } catch (err) {
@@ -518,7 +531,6 @@ export class CoupleStore {
     if (updates.avatar) {
       saveMediaItem('partner_avatar_' + id, updates.avatar);
     }
-    // Save to dedicated partner document in Firestore for guaranteed sub-second sync
     if (firestoreDb) {
       setDoc(doc(firestoreDb, 'couple_partners', id), updated, { merge: true }).catch(() => {});
     }
@@ -549,39 +561,35 @@ export class CoupleStore {
   getMemories(): Memory[] {
     return this.data.memories;
   }
-  addMemory(item: Omit<Memory, 'id' | 'likes' | 'createdAt'>): Memory {
+  async addMemory(item: Omit<Memory, 'id' | 'likes' | 'createdAt'>): Promise<Memory> {
     const created: Memory = {
       ...item,
-      id: 'mem_' + Date.now(),
+      id: 'mem_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
       likes: 0,
       createdAt: new Date().toISOString()
     };
+
     if (created.imageUrl) {
       saveMediaItem(created.id, created.imageUrl);
     }
-    this.data.memories = [created, ...this.data.memories];
-    
-    // Save dedicated memory document in Firestore for instant multi-device sync
+
+    this.data.memories = [created, ...this.data.memories.filter((m) => m.id !== created.id)];
+    this.saveLocal();
+
+    // Save dedicated memory document in Firestore
     if (firestoreDb) {
-      setDoc(doc(firestoreDb, 'couple_memories', created.id), created).catch((err) => {
+      try {
+        await setDoc(doc(firestoreDb, 'couple_memories', created.id), created);
+      } catch (err) {
         console.warn('Memory cloud sync note:', err);
-      });
+      }
     }
 
-    this.saveLocal();
     return created;
-  }
-  likeMemory(id: string): Memory {
-    this.data.memories = this.data.memories.map((m) =>
-      m.id === id ? { ...m, likes: m.likes + 1 } : m
-    );
-    this.saveLocal();
-    return this.data.memories.find((m) => m.id === id)!;
   }
   deleteMemory(id: string) {
     this.data.memories = this.data.memories.filter((m) => m.id !== id);
     deleteMediaItem(id);
-    // Delete from Firestore dedicated memories collection
     if (firestoreDb) {
       deleteDoc(doc(firestoreDb, 'couple_memories', id)).catch(() => {});
     }
