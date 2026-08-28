@@ -13,7 +13,15 @@ import {
   SiteSettings
 } from '../types';
 import { firestoreDb } from './firebase';
-import { doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore';
+import {
+  doc,
+  setDoc,
+  onSnapshot,
+  getDoc,
+  collection,
+  getDocs,
+  deleteDoc
+} from 'firebase/firestore';
 import { saveMediaItem, getAllMediaItems, deleteMediaItem } from './imageDb';
 import { saveAllDataToR2, loadAllDataFromR2, isR2Configured } from './r2Storage';
 
@@ -87,8 +95,6 @@ const DEFAULT_COUNTDOWNS: Countdown[] = [
     description: 'Spoiling my boy with extra love and treats!'
   }
 ];
-
-const DEFAULT_MEMORIES: Memory[] = [];
 
 const DEFAULT_TIMELINE: Milestone[] = [
   {
@@ -238,6 +244,7 @@ export class CoupleStore {
   private async pollFirebase() {
     if (!firestoreDb || this.isSyncingFromCloud) return;
     try {
+      // 1. Poll main_data
       const docRef = doc(firestoreDb, 'couple_hub', 'main_data');
       const snap = await getDoc(docRef);
       if (snap.exists()) {
@@ -246,7 +253,40 @@ export class CoupleStore {
           this.applyRemoteData(remote);
         }
       }
-    } catch (e) {
+
+      // 2. Poll dedicated memories collection
+      const memsColl = collection(firestoreDb, 'couple_memories');
+      const memsSnap = await getDocs(memsColl);
+      if (!memsSnap.empty) {
+        const cloudMemories: Memory[] = [];
+        memsSnap.forEach((d) => {
+          cloudMemories.push(d.data() as Memory);
+        });
+        if (cloudMemories.length > 0) {
+          // Sort newest first
+          cloudMemories.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+          this.data.memories = cloudMemories;
+          this.notify();
+        }
+      }
+
+      // 3. Poll dedicated partners collection
+      const partnersColl = collection(firestoreDb, 'couple_partners');
+      const partnersSnap = await getDocs(partnersColl);
+      if (!partnersSnap.empty) {
+        const cloudPartners: Partner[] = [];
+        partnersSnap.forEach((d) => {
+          cloudPartners.push(d.data() as Partner);
+        });
+        if (cloudPartners.length > 0) {
+          this.data.partners = this.data.partners.map((lp) => {
+            const cp = cloudPartners.find((p) => p.id === lp.id);
+            return cp ? { ...lp, ...cp, avatar: cp.avatar || lp.avatar } : lp;
+          });
+          this.notify();
+        }
+      }
+    } catch {
       // Quiet fail on network hiccups
     }
   }
@@ -255,7 +295,7 @@ export class CoupleStore {
     if (!remote) return;
     this.isSyncingFromCloud = true;
 
-    // Remote partner data takes priority so mobile phone gets updated avatar & profile instantly
+    // Remote partner data takes priority
     const mergedPartners = this.data.partners.map((lp) => {
       const rp = remote.partners?.find((p: any) => p.id === lp.id);
       if (!rp) return lp;
@@ -316,7 +356,17 @@ export class CoupleStore {
         hasUpdates = true;
       }
 
+      // Hydrate memories
+      const updatedMemories = this.data.memories.map((m) => {
+        if (mediaMap[m.id] && !m.imageUrl) {
+          hasUpdates = true;
+          return { ...m, imageUrl: mediaMap[m.id] };
+        }
+        return m;
+      });
+
       if (hasUpdates) {
+        this.data.memories = updatedMemories;
         this.notify();
       }
     } catch (e) {
@@ -389,6 +439,7 @@ export class CoupleStore {
   private async initFirebaseSync() {
     if (!firestoreDb) return;
     try {
+      // 1. Listen to main couple hub data
       const docRef = doc(firestoreDb, 'couple_hub', 'main_data');
       onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
@@ -397,8 +448,37 @@ export class CoupleStore {
             this.applyRemoteData(remote);
           }
         } else {
-          // Push initial data to cloud
           setDoc(docRef, this.data, { merge: true });
+        }
+      });
+
+      // 2. Real-time dedicated memories collection listener
+      const memsColl = collection(firestoreDb, 'couple_memories');
+      onSnapshot(memsColl, (snap) => {
+        if (!snap.empty) {
+          const cloudMemories: Memory[] = [];
+          snap.forEach((d) => {
+            cloudMemories.push(d.data() as Memory);
+          });
+          cloudMemories.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+          this.data.memories = cloudMemories;
+          this.notify();
+        }
+      });
+
+      // 3. Real-time dedicated partners collection listener
+      const partnersColl = collection(firestoreDb, 'couple_partners');
+      onSnapshot(partnersColl, (snap) => {
+        if (!snap.empty) {
+          const cloudPartners: Partner[] = [];
+          snap.forEach((d) => {
+            cloudPartners.push(d.data() as Partner);
+          });
+          this.data.partners = this.data.partners.map((lp) => {
+            const cp = cloudPartners.find((p) => p.id === lp.id);
+            return cp ? { ...lp, ...cp, avatar: cp.avatar || lp.avatar } : lp;
+          });
+          this.notify();
         }
       });
     } catch (err) {
@@ -434,11 +514,16 @@ export class CoupleStore {
   }
   updatePartner(id: string, updates: Partial<Partner>): Partner {
     this.data.partners = this.data.partners.map((p) => (p.id === id ? { ...p, ...updates } : p));
+    const updated = this.data.partners.find((p) => p.id === id)!;
     if (updates.avatar) {
       saveMediaItem('partner_avatar_' + id, updates.avatar);
     }
+    // Save to dedicated partner document in Firestore for guaranteed sub-second sync
+    if (firestoreDb) {
+      setDoc(doc(firestoreDb, 'couple_partners', id), updated, { merge: true }).catch(() => {});
+    }
     this.saveLocal();
-    return this.data.partners.find((p) => p.id === id)!;
+    return updated;
   }
 
   // 3. Countdowns
@@ -475,12 +560,31 @@ export class CoupleStore {
       saveMediaItem(created.id, created.imageUrl);
     }
     this.data.memories = [created, ...this.data.memories];
+    
+    // Save dedicated memory document in Firestore for instant multi-device sync
+    if (firestoreDb) {
+      setDoc(doc(firestoreDb, 'couple_memories', created.id), created).catch((err) => {
+        console.warn('Memory cloud sync note:', err);
+      });
+    }
+
     this.saveLocal();
     return created;
+  }
+  likeMemory(id: string): Memory {
+    this.data.memories = this.data.memories.map((m) =>
+      m.id === id ? { ...m, likes: m.likes + 1 } : m
+    );
+    this.saveLocal();
+    return this.data.memories.find((m) => m.id === id)!;
   }
   deleteMemory(id: string) {
     this.data.memories = this.data.memories.filter((m) => m.id !== id);
     deleteMediaItem(id);
+    // Delete from Firestore dedicated memories collection
+    if (firestoreDb) {
+      deleteDoc(doc(firestoreDb, 'couple_memories', id)).catch(() => {});
+    }
     this.saveLocal();
   }
 
