@@ -1,15 +1,29 @@
 import { saveMediaItem } from './imageDb';
+import { uploadImageToGoogleDrive, isGoogleDriveConfigured } from './googleDrive';
 import { isCloudinaryConfigured, uploadImageToCloudinary } from './cloudinary';
 import { isR2Configured, uploadImageToR2 } from './r2Storage';
 
 /**
  * Universal Image Optimizer & Cloud Uploader for Our Universe
- * 1. If Cloudinary or Cloudflare R2 is configured, uploads to dedicated cloud.
- * 2. Otherwise creates an ultra-optimized, high-clarity WebP image (~30KB)
- *    that syncs natively and seamlessly through Firebase Cloud Firestore with zero CORS issues.
+ * 1. Primary: Direct Upload to User's Personal Google Drive (via Google Apps Script Webhook).
+ * 2. Secondary: Cloudinary (if configured).
+ * 3. Tertiary: Cloudflare R2 (if configured).
+ * 4. Fallback: Ultra-optimized WebP Data URL for real-time Firebase Sync.
  */
 export async function uploadImage(file: File): Promise<string> {
-  // 1. Try Cloudinary if user configured it
+  // 1. Primary: Google Drive Cloud Storage (100% Free & Saved in your Google Drive folder)
+  if (isGoogleDriveConfigured()) {
+    try {
+      const driveUrl = await uploadImageToGoogleDrive(file);
+      if (driveUrl && driveUrl.startsWith('http')) {
+        return driveUrl;
+      }
+    } catch (err) {
+      console.warn('Google Drive upload attempt note, trying next provider:', err);
+    }
+  }
+
+  // 2. Secondary: Cloudinary
   if (isCloudinaryConfigured()) {
     try {
       const cldUrl = await uploadImageToCloudinary(file);
@@ -21,7 +35,7 @@ export async function uploadImage(file: File): Promise<string> {
     }
   }
 
-  // 2. Try Cloudflare R2 if user configured it
+  // 3. Tertiary: Cloudflare R2
   if (isR2Configured()) {
     try {
       const r2Url = await uploadImageToR2(file);
@@ -33,7 +47,7 @@ export async function uploadImage(file: File): Promise<string> {
     }
   }
 
-  // 3. Ultra-optimized WebP Data URL (~25KB-45KB) for seamless real-time Firebase Sync
+  // 4. Fallback: Ultra-optimized WebP Data URL (~25KB-45KB) for seamless real-time Firebase Sync
   const optimizedDataUrl = await compressToLightweightWebP(file);
   const mediaId = 'img_' + Date.now();
   await saveMediaItem(mediaId, optimizedDataUrl);
@@ -42,7 +56,6 @@ export async function uploadImage(file: File): Promise<string> {
 
 function compressToLightweightWebP(file: File): Promise<string> {
   return new Promise((resolve) => {
-    // 6-second fallback
     const timeout = setTimeout(() => {
       resolve(URL.createObjectURL(file));
     }, 6000);
@@ -81,7 +94,6 @@ function compressToLightweightWebP(file: File): Promise<string> {
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(img, 0, 0, width, height);
-            // 0.68 quality WebP gives crisp retina visual quality with tiny ~30KB footprint
             const webp = canvas.toDataURL('image/webp', 0.68);
             clearTimeout(timeout);
             resolve(webp);

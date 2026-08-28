@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Sparkles, Star, Edit3, Cloud, Image as ImageIcon } from 'lucide-react';
+import { Heart, Sparkles, Star, Edit3, HardDrive, FolderHeart } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { isFirebaseConnected } from '../services/firebase';
-import { isR2Configured } from '../services/r2Storage';
-import { isCloudinaryConfigured } from '../services/cloudinary';
+import { isGoogleDriveConfigured } from '../services/googleDrive';
 import { coupleStore, SiteSettings } from '../services/store';
 import { motion } from 'framer-motion';
 
@@ -17,6 +16,7 @@ interface NavbarProps {
   onOpenLogoModal: () => void;
   onOpenR2Modal: () => void;
   onOpenCloudinaryModal: () => void;
+  onOpenGoogleDriveModal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -27,13 +27,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenLoveJar,
   onOpenFirebaseModal,
   onOpenLogoModal,
-  onOpenR2Modal,
-  onOpenCloudinaryModal
+  onOpenGoogleDriveModal
 }) => {
   const { currentPartner, otherPartner, switchPartner } = useAuth();
   const firebaseConnected = isFirebaseConnected();
-  const r2Connected = isR2Configured();
-  const cldConnected = isCloudinaryConfigured();
+  const driveConnected = isGoogleDriveConfigured();
   const [settings, setSettings] = useState<SiteSettings>(() => coupleStore.getSettings());
 
   useEffect(() => {
@@ -74,22 +72,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                 <button
                   type="button"
-                  onClick={onOpenCloudinaryModal}
-                  className="flex items-center gap-1 text-[11px] text-stone-500 font-medium hover:text-sky-600 transition cursor-pointer"
-                  title="Configure Cloudinary HD Photo Storage"
+                  onClick={onOpenGoogleDriveModal}
+                  className="flex items-center gap-1.5 text-[11px] text-stone-600 font-bold hover:text-emerald-600 transition cursor-pointer bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shadow-xs"
+                  title="Configure Google Drive Photo Storage"
                 >
-                  <ImageIcon size={12} className={cldConnected ? 'text-sky-500' : 'text-stone-400'} />
-                  <span>{cldConnected ? 'Cloudinary Active 📸' : 'Connect Cloudinary 📸'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={onOpenR2Modal}
-                  className="flex items-center gap-1 text-[11px] text-stone-500 font-medium hover:text-orange-600 transition cursor-pointer"
-                  title="Configure Cloudflare R2 Cloud Storage"
-                >
-                  <Cloud size={12} className={r2Connected ? 'text-orange-500' : 'text-stone-400'} />
-                  <span>{r2Connected ? 'R2 Active ☁️' : 'R2 Cloud ☁️'}</span>
+                  <FolderHeart size={13} className="text-emerald-500 fill-emerald-100" />
+                  <span className="text-emerald-700">Google Drive Connected 📁</span>
                 </button>
               </div>
             </div>
