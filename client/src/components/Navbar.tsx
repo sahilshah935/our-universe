@@ -152,7 +152,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           {[
             { id: 'dashboard', label: '🏠 Dashboard' },
             { id: 'scrapbook', label: '📸 Polaroid Scrapbook' },
-            { id: 'comfort', label: '🚪 Comfort Doors' },
             { id: 'nicknames', label: '🏷️ Nickname Wall' },
             { id: 'insidejokes', label: '📖 Inside Jokes' },
             { id: 'timeline', label: '🗺️ Our Story' },

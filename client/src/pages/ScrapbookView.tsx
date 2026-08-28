@@ -35,6 +35,7 @@ export const ScrapbookView: React.FC = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [location, setLocation] = useState('');
   const [chapter, setChapter] = useState('Cozy Dates');
+  const [mood, setMood] = useState('Happy ✨');
   const [imageUrl, setImageUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -87,11 +88,11 @@ export const ScrapbookView: React.FC = () => {
 
       await coupleStore.addMemory({
         title: title.trim(),
-        description: description.trim() || undefined,
+        description: description.trim() || '',
         date: date || new Date().toISOString().split('T')[0],
-        location: location.trim() || undefined,
-        chapter,
-        mood: mood.trim() || 'Happy ✨',
+        location: location.trim() || '',
+        chapter: chapter || 'Cozy Dates',
+        mood: mood || 'Happy ✨',
         imageUrl: imageUrl.trim(),
         authorId,
         pinned: 0
@@ -108,7 +109,7 @@ export const ScrapbookView: React.FC = () => {
       setDescription('');
       setLocation('');
       setImageUrl('');
-      setMood('Magical ✨');
+      setMood('Happy ✨');
     } catch (err) {
       console.error('Pinning memory failed:', err);
       showLoveWarning('Could not pin memory right now, please try again darling 🥺');
@@ -145,14 +146,10 @@ export const ScrapbookView: React.FC = () => {
         {/* Add Memory Button */}
         <button
           type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsAddingMemory(true);
-          }}
-          className="relative z-10 py-3 px-5 rounded-2xl bg-linear-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-rose-200 transition-all flex items-center gap-2 shrink-0 cursor-pointer hover:scale-105 active:scale-95"
+          onClick={() => setIsAddingMemory(true)}
+          className="relative z-20 py-3.5 px-6 rounded-2xl bg-linear-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white font-extrabold text-sm shadow-lg shadow-rose-200 transition-all flex items-center gap-2 shrink-0 cursor-pointer hover:scale-105 active:scale-95"
         >
-          <Plus size={18} />
+          <Plus size={20} />
           <span>Add Polaroid Memory 📸</span>
         </button>
       </div>
@@ -188,12 +185,8 @@ export const ScrapbookView: React.FC = () => {
           </p>
           <button
             type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setIsAddingMemory(true);
-            }}
-            className="py-2.5 px-5 rounded-xl bg-linear-to-r from-rose-500 to-pink-500 text-white font-bold text-xs shadow-md shadow-rose-200 hover:scale-105 transition cursor-pointer"
+            onClick={() => setIsAddingMemory(true)}
+            className="py-3 px-6 rounded-xl bg-linear-to-r from-rose-500 to-pink-500 text-white font-bold text-sm shadow-md shadow-rose-200 hover:scale-105 transition cursor-pointer"
           >
             + Pin Our First Polaroid 📌
           </button>
@@ -219,196 +212,180 @@ export const ScrapbookView: React.FC = () => {
       )}
 
       {/* Add Memory Modal */}
-      <AnimatePresence>
-        {isAddingMemory && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative max-w-lg w-full bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-rose-200 max-h-[90vh] overflow-y-auto"
+      {isAddingMemory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm overflow-y-auto">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="relative max-w-lg w-full bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-rose-200 my-auto text-stone-800"
+          >
+            <button
+              type="button"
+              onClick={() => setIsAddingMemory(false)}
+              className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-rose-50 transition cursor-pointer"
             >
-              <button
-                onClick={() => setIsAddingMemory(false)}
-                className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-rose-50 transition cursor-pointer"
-              >
-                <X size={18} />
-              </button>
+              <X size={20} />
+            </button>
 
-              <div className="text-center mb-5">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100 text-rose-700 text-xs font-bold uppercase tracking-wider mb-2">
-                  <Heart size={12} className="fill-rose-500 text-rose-500" />
-                  New Polaroid Memory
-                </div>
-                <h3 className="text-2xl font-bold text-stone-900 font-serif-title">
-                  Pin To Scrapbook 📌
-                </h3>
-                <p className="text-stone-500 text-xs mt-1">
-                  Upload a cute photo and write a heartfelt secret story for the back.
-                </p>
+            <div className="text-center mb-5">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100 text-rose-700 text-xs font-bold uppercase tracking-wider mb-2">
+                <Heart size={12} className="fill-rose-500 text-rose-500" />
+                New Polaroid Memory
               </div>
+              <h3 className="text-2xl font-bold text-stone-900 font-serif-title">
+                Pin To Scrapbook 📌
+              </h3>
+              <p className="text-stone-500 text-xs mt-1">
+                Upload a cute photo and write a heartfelt secret story for the back.
+              </p>
+            </div>
 
-              <form onSubmit={handleCreateMemory} noValidate className="space-y-4">
-                {/* Photo Upload or URL */}
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1 flex items-center gap-1">
-                    <ImageIcon size={13} className="text-rose-500" /> Photo Upload or Link
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      placeholder="Paste image link or click Choose File..."
-                      className="flex-1 p-3 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400 bg-stone-50/50"
-                    />
-                    <label className="py-2.5 px-4 bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-xl text-xs font-bold cursor-pointer transition flex items-center gap-1.5 shrink-0 shadow-xs">
-                      <Upload size={14} />
-                      {isUploading ? 'Uploading...' : 'Choose File'}
-                      <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-                    </label>
-                  </div>
-                  {imageUrl && (
-                    <div className="mt-3 w-full h-40 rounded-2xl overflow-hidden border-2 border-rose-200 shadow-sm relative group">
-                      <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                      <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 text-white text-[10px] font-bold rounded-lg backdrop-blur-xs">
-                        Photo Loaded ✨
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Memory Title</label>
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g. Sunset Croissants 🥐"
-                      className="w-full p-3 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 uppercase mb-1 flex items-center gap-1">
-                      <Calendar size={12} className="text-rose-500" /> Date
-                    </label>
-                    <input
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      className="w-full p-2.5 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Chapter</label>
-                    <select
-                      value={chapter}
-                      onChange={(e) => setChapter(e.target.value)}
-                      className="w-full p-3 text-xs rounded-xl border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    >
-                      <option value="Chapter 1: The Beginning">Chapter 1: The Beginning</option>
-                      <option value="Cozy Dates">Cozy Dates</option>
-                      <option value="Adventures & Trips">Adventures & Trips</option>
-                      <option value="Silly Moments">Silly Moments</option>
-                      <option value="Celebrations">Celebrations</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 uppercase mb-1 flex items-center gap-1">
-                      <MapPin size={12} className="text-rose-500" /> Location / Cafe
-                    </label>
-                    <input
-                      type="text"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      placeholder="e.g. Sunset Pier 🌊"
-                      className="w-full p-3 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1 flex items-center gap-1">
-                    <Smile size={12} className="text-rose-500" /> Mood Tag
-                  </label>
+            <form onSubmit={handleCreateMemory} noValidate className="space-y-4">
+              {/* Photo Upload or URL */}
+              <div>
+                <label className="block text-xs font-bold text-stone-700 uppercase mb-1 flex items-center gap-1">
+                  <ImageIcon size={13} className="text-rose-500" /> Photo Upload or Link
+                </label>
+                <div className="flex gap-2">
                   <input
                     type="text"
-                    value={mood}
-                    onChange={(e) => setMood(e.target.value)}
-                    placeholder="e.g. Magical ✨, Romantic 🍷, Silly 😂"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="Paste image link or click Choose File..."
+                    className="flex-1 p-3 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400 bg-stone-50/50"
+                  />
+                  <label className="py-2.5 px-4 bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-xl text-xs font-bold cursor-pointer transition flex items-center gap-1.5 shrink-0 shadow-xs">
+                    <Upload size={14} />
+                    {isUploading ? 'Uploading...' : 'Choose File'}
+                    <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                  </label>
+                </div>
+                {imageUrl && (
+                  <div className="mt-3 w-full h-40 rounded-2xl overflow-hidden border-2 border-rose-200 shadow-sm relative group">
+                    <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                    <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 text-white text-[10px] font-bold rounded-lg backdrop-blur-xs">
+                      Photo Loaded ✨
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Memory Title</label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. Sunset Croissants 🥐"
                     className="w-full p-3 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
-                    Secret Story on the Back (Handwritten Note) 💌
+                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1 flex items-center gap-1">
+                    <Calendar size={12} className="text-rose-500" /> Date
                   </label>
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Pour your heart out about what made this moment so special..."
-                    className="w-full p-3 text-sm rounded-2xl border border-stone-200 resize-none font-handwriting text-lg bg-rose-50/30 focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    rows={3}
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
                   />
                 </div>
+              </div>
 
-                <button
-                  type="submit"
-                  disabled={isUploading || isSaving}
-                  className="w-full py-3.5 px-4 bg-linear-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white rounded-2xl font-bold shadow-lg shadow-rose-200 transition-all flex items-center justify-center gap-2 cursor-pointer text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {isUploading
-                    ? 'Uploading Photo to Google Drive... ⏳'
-                    : isSaving
-                    ? 'Pinning to Scrapbook... ✨'
-                    : 'Pin to Scrapbook 📌'}
-                </button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Chapter</label>
+                  <select
+                    value={chapter}
+                    onChange={(e) => setChapter(e.target.value)}
+                    className="w-full p-3 text-xs rounded-xl border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  >
+                    <option value="Chapter 1: The Beginning">Chapter 1: The Beginning</option>
+                    <option value="Cozy Dates">Cozy Dates</option>
+                    <option value="Adventures & Trips">Adventures & Trips</option>
+                    <option value="Silly Moments">Silly Moments</option>
+                    <option value="Celebrations">Celebrations</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1 flex items-center gap-1">
+                    <MapPin size={12} className="text-rose-500" /> Location / Cafe
+                  </label>
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="e.g. Blue Tokai ☕"
+                    className="w-full p-3 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
+                  Secret Story on the Back (Handwritten Note) 💌
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Pour your heart out about what made this moment so special..."
+                  className="w-full p-3 text-sm rounded-2xl border border-stone-200 resize-none font-handwriting text-lg bg-rose-50/30 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  rows={3}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isUploading || isSaving}
+                className="w-full py-3.5 px-4 bg-linear-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white rounded-2xl font-bold shadow-lg shadow-rose-200 transition-all flex items-center justify-center gap-2 cursor-pointer text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isUploading
+                  ? 'Uploading Photo to Google Drive... ⏳'
+                  : isSaving
+                  ? 'Pinning to Scrapbook... ✨'
+                  : 'Pin to Scrapbook 📌'}
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
 
       {/* Fullscreen Lightbox Zoom */}
-      <AnimatePresence>
-        {zoomedMemory && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
-            onClick={() => setZoomedMemory(null)}
+      {zoomedMemory && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+          onClick={() => setZoomedMemory(null)}
+        >
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            className="relative max-w-2xl w-full bg-white rounded-3xl p-4 overflow-hidden shadow-2xl border border-rose-200"
+            onClick={(e) => e.stopPropagation()}
           >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              className="relative max-w-2xl w-full bg-white rounded-3xl p-4 overflow-hidden shadow-2xl border border-rose-200"
-              onClick={(e) => e.stopPropagation()}
+            <button
+              onClick={() => setZoomedMemory(null)}
+              className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black transition z-10 cursor-pointer"
             >
-              <button
-                onClick={() => setZoomedMemory(null)}
-                className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black transition z-10 cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-              <img
-                src={zoomedMemory.imageUrl}
-                alt={zoomedMemory.title}
-                className="w-full max-h-[70vh] object-contain rounded-2xl"
-              />
-              <div className="p-4 text-center">
-                <h3 className="text-xl font-bold font-serif-title text-stone-900">{zoomedMemory.title}</h3>
-                <p className="text-xs text-stone-500 mt-1">
-                  {zoomedMemory.date} &bull; {zoomedMemory.location || 'Special Place'} &bull; {zoomedMemory.mood}
-                </p>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+              <X size={18} />
+            </button>
+            <img
+              src={zoomedMemory.imageUrl}
+              alt={zoomedMemory.title}
+              className="w-full max-h-[70vh] object-contain rounded-2xl"
+            />
+            <div className="p-4 text-center">
+              <h3 className="text-xl font-bold font-serif-title text-stone-900">{zoomedMemory.title}</h3>
+              <p className="text-xs text-stone-500 mt-1">
+                {zoomedMemory.date} &bull; {zoomedMemory.location || 'Special Place'} &bull; {zoomedMemory.mood}
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

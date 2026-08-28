@@ -304,15 +304,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* 5. Romantic Action Cards (Comfort Sanctuary, Nicknames, Dictionary, etc.) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div
-          onClick={() => onNavigate('comfort')}
+          onClick={() => onNavigate('journal')}
           className="p-5 rounded-3xl bg-linear-to-br from-rose-50 to-pink-100/60 border border-rose-200/80 shadow-xs hover:shadow-md cursor-pointer transition group"
         >
           <div className="w-12 h-12 rounded-2xl bg-rose-500 text-white flex items-center justify-center text-xl mb-3 shadow-md shadow-rose-200 group-hover:scale-110 transition">
-            <Key size={22} />
+            <Heart size={22} className="fill-white" />
           </div>
-          <h4 className="text-base font-bold text-stone-800 font-serif-title">Open-When Doors</h4>
+          <h4 className="text-base font-bold text-stone-800 font-serif-title">Love Journal & Fridge 💌</h4>
           <p className="text-xs text-stone-500 mt-1">
-            "Open when you're sad", "Open when we fight", and comfort sanctuary letters.
+            Handwritten letters, time capsules, and colorful sticky notes on our fridge.
           </p>
         </div>
 

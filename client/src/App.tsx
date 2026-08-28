@@ -15,7 +15,6 @@ import { CloudinaryModal } from './components/CloudinaryModal';
 import { GoogleDriveModal } from './components/GoogleDriveModal';
 import { DashboardView } from './pages/DashboardView';
 import { ScrapbookView } from './pages/ScrapbookView';
-import { ComfortSanctuary } from './components/ComfortSanctuary';
 import { NicknameWall } from './components/NicknameWall';
 import { InsideJokeDictionary } from './components/InsideJokeDictionary';
 import { RelationshipTimeline as TimelineView } from './components/RelationshipTimeline';
@@ -65,7 +64,6 @@ const MainApp: React.FC = () => {
           />
         )}
         {activeTab === 'scrapbook' && <ScrapbookView />}
-        {activeTab === 'comfort' && <ComfortSanctuary />}
         {activeTab === 'nicknames' && <NicknameWall />}
         {activeTab === 'insidejokes' && <InsideJokeDictionary />}
         {activeTab === 'timeline' && <TimelineView />}
