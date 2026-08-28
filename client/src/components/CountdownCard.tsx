@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trash2, Heart } from 'lucide-react';
 import { Countdown } from '../types';
-import { api } from '../services/api';
+import { coupleStore } from '../services/store';
+import { useSound } from '../context/SoundContext';
+import { useLoveToast } from '../context/LoveToastContext';
 import { SweetConfirmModal } from './SweetConfirmModal';
 
 interface CountdownCardProps {
@@ -11,6 +13,9 @@ interface CountdownCardProps {
 }
 
 export const CountdownCard: React.FC<CountdownCardProps> = ({ countdown, onDeleted }) => {
+  const { playHeartPop } = useSound();
+  const { showLoveSuccess } = useLoveToast();
+
   const [timeLeft, setTimeLeft] = useState<{
     days: number;
     hours: number;
@@ -45,10 +50,12 @@ export const CountdownCard: React.FC<CountdownCardProps> = ({ countdown, onDelet
     return () => clearInterval(timer);
   }, [countdown.targetDate]);
 
-  const confirmDelete = async () => {
-    await api.deleteCountdown(countdown.id);
+  const confirmDelete = () => {
+    playHeartPop();
+    coupleStore.deleteCountdown(countdown.id);
     if (onDeleted) onDeleted(countdown.id);
     setShowConfirm(false);
+    showLoveSuccess('Countdown removed with love! ⏳', '✨');
   };
 
   const formattedDate = new Date(countdown.targetDate).toLocaleDateString('en-US', {
@@ -78,11 +85,13 @@ export const CountdownCard: React.FC<CountdownCardProps> = ({ countdown, onDelet
           </div>
 
           <button
+            type="button"
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               setShowConfirm(true);
             }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-stone-400 hover:text-rose-500 rounded-full hover:bg-rose-50"
+            className="opacity-70 sm:opacity-0 group-hover:opacity-100 transition-opacity p-2 text-stone-400 hover:text-rose-500 rounded-full hover:bg-rose-50 cursor-pointer"
             title="Delete countdown"
           >
             <Trash2 size={16} />
