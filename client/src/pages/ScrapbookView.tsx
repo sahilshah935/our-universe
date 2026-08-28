@@ -35,9 +35,9 @@ export const ScrapbookView: React.FC = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [location, setLocation] = useState('');
   const [chapter, setChapter] = useState('Cozy Dates');
-  const [mood, setMood] = useState('Magical ✨');
   const [imageUrl, setImageUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const unsubscribe = coupleStore.subscribe(() => {
@@ -81,32 +81,40 @@ export const ScrapbookView: React.FC = () => {
       return;
     }
 
-    const authorId = currentPartner?.id || 'partner1';
+    setIsSaving(true);
+    try {
+      const authorId = currentPartner?.id || 'partner1';
 
-    await coupleStore.addMemory({
-      title: title.trim(),
-      description: description.trim() || undefined,
-      date: date || new Date().toISOString().split('T')[0],
-      location: location.trim() || undefined,
-      chapter,
-      mood: mood.trim() || 'Happy ✨',
-      imageUrl: imageUrl.trim(),
-      authorId,
-      pinned: 0
-    });
+      await coupleStore.addMemory({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        date: date || new Date().toISOString().split('T')[0],
+        location: location.trim() || undefined,
+        chapter,
+        mood: mood.trim() || 'Happy ✨',
+        imageUrl: imageUrl.trim(),
+        authorId,
+        pinned: 0
+      });
 
-    setMemories(coupleStore.getMemories());
-    playSparkle();
-    confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
-    showLoveSuccess('Memory pinned to our scrapbook forever! 📌❤️', '🎉');
-    setIsAddingMemory(false);
+      setMemories(coupleStore.getMemories());
+      playSparkle();
+      confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
+      showLoveSuccess('Memory pinned to our scrapbook forever! 📌❤️', '🎉');
+      setIsAddingMemory(false);
 
-    // Reset form
-    setTitle('');
-    setDescription('');
-    setLocation('');
-    setImageUrl('');
-    setMood('Magical ✨');
+      // Reset form
+      setTitle('');
+      setDescription('');
+      setLocation('');
+      setImageUrl('');
+      setMood('Magical ✨');
+    } catch (err) {
+      console.error('Pinning memory failed:', err);
+      showLoveWarning('Could not pin memory right now, please try again darling 🥺');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const filteredMemories = memories.filter(
@@ -343,9 +351,14 @@ export const ScrapbookView: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 px-4 bg-linear-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white rounded-2xl font-bold shadow-lg shadow-rose-200 transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
+                  disabled={isUploading || isSaving}
+                  className="w-full py-3.5 px-4 bg-linear-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white rounded-2xl font-bold shadow-lg shadow-rose-200 transition-all flex items-center justify-center gap-2 cursor-pointer text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {isUploading ? 'Uploading Photo... ⏳' : 'Pin to Scrapbook 📌'}
+                  {isUploading
+                    ? 'Uploading Photo to Google Drive... ⏳'
+                    : isSaving
+                    ? 'Pinning to Scrapbook... ✨'
+                    : 'Pin to Scrapbook 📌'}
                 </button>
               </form>
             </motion.div>

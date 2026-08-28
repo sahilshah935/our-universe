@@ -23,7 +23,7 @@ export function isGoogleDriveConfigured(): boolean {
 
 /**
  * Upload an image file directly to the user's personal Google Drive folder
- * Returns a high-speed direct viewable image link (https://lh3.googleusercontent.com/d/FILE_ID)
+ * Uses Content-Type: text/plain to bypass CORS preflight and handle Google Apps Script 302 redirects cleanly
  */
 export async function uploadImageToGoogleDrive(file: File): Promise<string> {
   const scriptUrl = getGoogleDriveScriptUrl();
@@ -41,18 +41,25 @@ export async function uploadImageToGoogleDrive(file: File): Promise<string> {
     mimeType: file.type || 'image/jpeg'
   };
 
+  // Google Apps Script requires text/plain to avoid CORS OPTIONS preflight
   const response = await fetch(scriptUrl, {
     method: 'POST',
-    body: JSON.stringify(payload)
+    headers: {
+      'Content-Type': 'text/plain;charset=utf-8'
+    },
+    body: JSON.stringify(payload),
+    redirect: 'follow'
   });
 
-  if (!response.ok) {
-    throw new Error(`Google Drive script responded with HTTP status ${response.status}`);
+  const responseText = await response.text();
+  let result: any;
+  try {
+    result = JSON.parse(responseText);
+  } catch {
+    throw new Error('Invalid response from Google Drive script: ' + responseText);
   }
 
-  const result = await response.json();
   if (result.status === 'success' && result.url) {
-    // Cache in local IndexedDB for instant offline load
     const mediaId = 'gdrive_' + (result.fileId || Date.now());
     await saveMediaItem(mediaId, result.url);
     console.log('✅ Image uploaded directly to Google Drive folder:', result.url);
