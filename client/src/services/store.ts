@@ -8,7 +8,6 @@ import {
   Milestone,
   NicknameItem,
   InsideJokeItem,
-  ComfortDoor,
   FutureDreamItem,
   SiteSettings
 } from '../types';
@@ -165,34 +164,6 @@ const DEFAULT_INSIDE_JOKES: InsideJokeItem[] = [
   }
 ];
 
-const DEFAULT_COMFORT_DOORS: ComfortDoor[] = [
-  {
-    id: 'door_sad',
-    title: "Open When You're Sad / Overwhelmed 🥺",
-    subtitle: 'Take a deep breath. You are safe here.',
-    emoji: '🥺',
-    doorColor: 'from-rose-400 to-pink-500',
-    letter: 'Hey my love,\n\nI know today feels heavy, but remember that you are never alone. I am always in your corner, cheering for you and loving you with all my heart.\n\nTake a sip of water, close your eyes, and let me wrap you in the biggest imaginary hug. Everything is going to be okay. ❤️',
-    memeUrl: 'https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?auto=format&fit=crop&q=80&w=600',
-    songTitle: 'Best Part - Daniel Caesar ft. H.E.R.',
-    songUrl: 'https://open.spotify.com',
-    authorId: 'partner1',
-    unlockedCount: 0,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'door_miss',
-    title: 'Open When You Miss Me So Much 🫂',
-    subtitle: 'Distance is temporary, my love for you is forever.',
-    emoji: '🫂',
-    doorColor: 'from-amber-400 to-rose-400',
-    letter: 'My sweet girl,\n\nI miss you right now too. Even when we are apart, every little thing reminds me of your smile, your laugh, and the warmth of holding your hand.\n\nSend me a quick love poke or text right now so I know you opened this! 💌',
-    authorId: 'partner1',
-    unlockedCount: 0,
-    createdAt: new Date().toISOString()
-  }
-];
-
 const DEFAULT_FUTURE_DREAMS: FutureDreamItem[] = [
   {
     id: 'fd_1',
@@ -214,20 +185,6 @@ const DEFAULT_FUTURE_DREAMS: FutureDreamItem[] = [
   }
 ];
 
-function mergeLists<T extends { id: string }>(localList: T[] = [], remoteList: T[] = []): T[] {
-  const map = new Map<string, T>();
-  for (const item of remoteList) {
-    if (item && item.id) map.set(item.id, item);
-  }
-  for (const item of localList) {
-    if (item && item.id) {
-      const existing = map.get(item.id);
-      map.set(item.id, existing ? { ...existing, ...item } : item);
-    }
-  }
-  return Array.from(map.values());
-}
-
 export class CoupleStore {
   private data: {
     settings: SiteSettings;
@@ -240,7 +197,6 @@ export class CoupleStore {
     timeline: Milestone[];
     nicknames: NicknameItem[];
     insideJokes: InsideJokeItem[];
-    comfortDoors: ComfortDoor[];
     futureDreams: FutureDreamItem[];
   };
 
@@ -268,17 +224,13 @@ export class CoupleStore {
       // 1. Dedicated memories collection
       const memsColl = collection(firestoreDb, 'couple_memories');
       const memsSnap = await getDocs(memsColl);
-      if (!memsSnap.empty) {
-        const cloudMemories: Memory[] = [];
-        memsSnap.forEach((d) => {
-          cloudMemories.push(d.data() as Memory);
-        });
-        if (cloudMemories.length > 0) {
-          cloudMemories.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-          this.data.memories = mergeLists(this.data.memories, cloudMemories);
-          this.notify();
-        }
-      }
+      const cloudMemories: Memory[] = [];
+      memsSnap.forEach((d) => {
+        cloudMemories.push(d.data() as Memory);
+      });
+      cloudMemories.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      this.data.memories = cloudMemories;
+      this.notify();
 
       // 2. Dedicated partners collection
       const partnersColl = collection(firestoreDb, 'couple_partners');
@@ -329,16 +281,15 @@ export class CoupleStore {
     this.data = {
       settings: { ...this.data.settings, ...(remote.settings || {}) },
       partners: mergedPartners.length > 0 ? mergedPartners : this.data.partners,
-      countdowns: remote.countdowns !== undefined ? mergeLists(this.data.countdowns, remote.countdowns) : this.data.countdowns,
-      memories: remote.memories && remote.memories.length > 0 ? mergeLists(this.data.memories, remote.memories) : this.data.memories,
-      notes: remote.notes !== undefined ? mergeLists(this.data.notes, remote.notes) : this.data.notes,
-      bucketList: remote.bucketList !== undefined ? mergeLists(this.data.bucketList, remote.bucketList) : this.data.bucketList,
-      loveJar: remote.loveJar !== undefined ? mergeLists(this.data.loveJar, remote.loveJar) : this.data.loveJar,
-      timeline: remote.timeline !== undefined ? mergeLists(this.data.timeline, remote.timeline) : this.data.timeline,
-      nicknames: remote.nicknames !== undefined ? mergeLists(this.data.nicknames, remote.nicknames) : this.data.nicknames,
-      insideJokes: remote.insideJokes !== undefined ? mergeLists(this.data.insideJokes, remote.insideJokes) : this.data.insideJokes,
-      comfortDoors: remote.comfortDoors !== undefined ? mergeLists(this.data.comfortDoors, remote.comfortDoors) : this.data.comfortDoors,
-      futureDreams: remote.futureDreams !== undefined ? mergeLists(this.data.futureDreams, remote.futureDreams) : this.data.futureDreams
+      countdowns: remote.countdowns !== undefined ? remote.countdowns : this.data.countdowns,
+      memories: this.data.memories,
+      notes: remote.notes !== undefined ? remote.notes : this.data.notes,
+      bucketList: remote.bucketList !== undefined ? remote.bucketList : this.data.bucketList,
+      loveJar: remote.loveJar !== undefined ? remote.loveJar : this.data.loveJar,
+      timeline: remote.timeline !== undefined ? remote.timeline : this.data.timeline,
+      nicknames: remote.nicknames !== undefined ? remote.nicknames : this.data.nicknames,
+      insideJokes: remote.insideJokes !== undefined ? remote.insideJokes : this.data.insideJokes,
+      futureDreams: remote.futureDreams !== undefined ? remote.futureDreams : this.data.futureDreams
     };
 
     try {
@@ -408,7 +359,6 @@ export class CoupleStore {
           timeline: parsed.timeline || DEFAULT_TIMELINE,
           nicknames: parsed.nicknames || DEFAULT_NICKNAMES,
           insideJokes: parsed.insideJokes || DEFAULT_INSIDE_JOKES,
-          comfortDoors: parsed.comfortDoors || DEFAULT_COMFORT_DOORS,
           futureDreams: parsed.futureDreams || DEFAULT_FUTURE_DREAMS
         };
       }
@@ -425,7 +375,6 @@ export class CoupleStore {
       timeline: DEFAULT_TIMELINE,
       nicknames: DEFAULT_NICKNAMES,
       insideJokes: DEFAULT_INSIDE_JOKES,
-      comfortDoors: DEFAULT_COMFORT_DOORS,
       futureDreams: DEFAULT_FUTURE_DREAMS
     };
   }
@@ -457,18 +406,16 @@ export class CoupleStore {
   private async initFirebaseSync() {
     if (!firestoreDb) return;
     try {
-      // 1. Dedicated memories collection listener
+      // 1. Dedicated memories collection listener (Syncs additions & deletions live)
       const memsColl = collection(firestoreDb, 'couple_memories');
       onSnapshot(memsColl, (snap) => {
-        if (!snap.empty) {
-          const cloudMemories: Memory[] = [];
-          snap.forEach((d) => {
-            cloudMemories.push(d.data() as Memory);
-          });
-          cloudMemories.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-          this.data.memories = mergeLists(this.data.memories, cloudMemories);
-          this.notify();
-        }
+        const cloudMemories: Memory[] = [];
+        snap.forEach((d) => {
+          cloudMemories.push(d.data() as Memory);
+        });
+        cloudMemories.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+        this.data.memories = cloudMemories;
+        this.notify();
       });
 
       // 2. Dedicated partners collection listener
@@ -487,7 +434,7 @@ export class CoupleStore {
         }
       });
 
-      // 3. Main couple hub document listener
+      // 3. Main couple hub document listener (Syncs all feature additions & deletions live)
       const docRef = doc(firestoreDb, 'couple_hub', 'main_data');
       onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
@@ -642,33 +589,7 @@ export class CoupleStore {
     this.saveLocal();
   }
 
-  // 7. 🚪 Comfort Doors
-  getComfortDoors(): ComfortDoor[] {
-    return this.data.comfortDoors;
-  }
-  addComfortDoor(item: Omit<ComfortDoor, 'id' | 'unlockedCount' | 'createdAt'>): ComfortDoor {
-    const created: ComfortDoor = {
-      ...item,
-      id: 'door_' + Date.now(),
-      unlockedCount: 0,
-      createdAt: new Date().toISOString()
-    };
-    this.data.comfortDoors = [created, ...this.data.comfortDoors];
-    this.saveLocal();
-    return created;
-  }
-  incrementDoorUnlock(id: string) {
-    this.data.comfortDoors = this.data.comfortDoors.map((d) =>
-      d.id === id ? { ...d, unlockedCount: (d.unlockedCount || 0) + 1 } : d
-    );
-    this.saveLocal();
-  }
-  deleteComfortDoor(id: string) {
-    this.data.comfortDoors = this.data.comfortDoors.filter((d) => d.id !== id);
-    this.saveLocal();
-  }
-
-  // 8. 🗺️ Our Story & Timeline
+  // 7. 🗺️ Our Story & Timeline
   getTimeline(): Milestone[] {
     return this.data.timeline;
   }
@@ -686,7 +607,7 @@ export class CoupleStore {
     this.saveLocal();
   }
 
-  // 9. Future Dreams
+  // 8. Future Dreams
   getFutureDreams(): FutureDreamItem[] {
     return this.data.futureDreams;
   }
@@ -705,7 +626,7 @@ export class CoupleStore {
     this.saveLocal();
   }
 
-  // 10. 💌 Love Journal (Notes)
+  // 9. 💌 Love Journal (Notes)
   getNotes(postItOnly = false): Note[] {
     if (postItOnly) {
       return this.data.notes.filter((n) => Boolean(n.isPostIt));
@@ -727,7 +648,7 @@ export class CoupleStore {
     this.saveLocal();
   }
 
-  // 11. ✨ Bucket List
+  // 10. ✨ Bucket List
   getBucketList(): BucketListItem[] {
     return this.data.bucketList;
   }
@@ -754,7 +675,7 @@ export class CoupleStore {
     this.saveLocal();
   }
 
-  // 12. ⭐ Love Jar
+  // 11. ⭐ Love Jar
   getLoveJarWishes(): LoveJarWish[] {
     return this.data.loveJar;
   }
