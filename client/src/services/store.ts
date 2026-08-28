@@ -13,7 +13,7 @@ import {
   SiteSettings
 } from '../types';
 import { firestoreDb } from './firebase';
-import { doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore';
 import { saveMediaItem, getAllMediaItems, deleteMediaItem } from './imageDb';
 import { saveAllDataToR2, loadAllDataFromR2, isR2Configured } from './r2Storage';
 
@@ -201,22 +201,6 @@ const DEFAULT_FUTURE_DREAMS: FutureDreamItem[] = [
   }
 ];
 
-function mergeListsById<T extends { id: string }>(localList: T[] = [], remoteList: T[] = []): T[] {
-  const map = new Map<string, T>();
-  // Put remote items first
-  for (const item of remoteList) {
-    if (item && item.id) map.set(item.id, item);
-  }
-  // Overlay local items so local changes / new items are never wiped
-  for (const item of localList) {
-    if (item && item.id) {
-      const existing = map.get(item.id);
-      map.set(item.id, existing ? { ...existing, ...item } : item);
-    }
-  }
-  return Array.from(map.values());
-}
-
 export class CoupleStore {
   private data: {
     settings: SiteSettings;
@@ -234,12 +218,75 @@ export class CoupleStore {
   };
 
   private listeners: Set<() => void> = new Set();
+  private isSyncingFromCloud = false;
 
   constructor() {
     this.data = this.loadLocal();
     this.hydrateMediaFromIndexedDB();
     this.initFirebaseSync();
     this.initR2Sync();
+    this.startPeriodicSync();
+  }
+
+  private startPeriodicSync() {
+    // 2-second real-time synchronization heartbeat across devices
+    setInterval(() => {
+      this.pollFirebase();
+    }, 2000);
+  }
+
+  private async pollFirebase() {
+    if (!firestoreDb || this.isSyncingFromCloud) return;
+    try {
+      const docRef = doc(firestoreDb, 'couple_hub', 'main_data');
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const remote = snap.data() as any;
+        if (remote) {
+          this.applyRemoteData(remote);
+        }
+      }
+    } catch (e) {
+      // Quiet fail on network hiccups
+    }
+  }
+
+  private applyRemoteData(remote: any) {
+    if (!remote) return;
+    this.isSyncingFromCloud = true;
+
+    // Remote partner data takes priority so mobile phone gets updated avatar & profile instantly
+    const mergedPartners = this.data.partners.map((lp) => {
+      const rp = remote.partners?.find((p: any) => p.id === lp.id);
+      if (!rp) return lp;
+      return {
+        ...lp,
+        ...rp,
+        avatar: rp.avatar || lp.avatar
+      };
+    });
+
+    this.data = {
+      settings: { ...this.data.settings, ...(remote.settings || {}) },
+      partners: mergedPartners.length > 0 ? mergedPartners : this.data.partners,
+      countdowns: remote.countdowns !== undefined ? remote.countdowns : this.data.countdowns,
+      memories: remote.memories !== undefined ? remote.memories : this.data.memories,
+      notes: remote.notes !== undefined ? remote.notes : this.data.notes,
+      bucketList: remote.bucketList !== undefined ? remote.bucketList : this.data.bucketList,
+      loveJar: remote.loveJar !== undefined ? remote.loveJar : this.data.loveJar,
+      timeline: remote.timeline !== undefined ? remote.timeline : this.data.timeline,
+      nicknames: remote.nicknames !== undefined ? remote.nicknames : this.data.nicknames,
+      insideJokes: remote.insideJokes !== undefined ? remote.insideJokes : this.data.insideJokes,
+      comfortDoors: remote.comfortDoors !== undefined ? remote.comfortDoors : this.data.comfortDoors,
+      futureDreams: remote.futureDreams !== undefined ? remote.futureDreams : this.data.futureDreams
+    };
+
+    try {
+      localStorage.setItem('asmi_couple_store_v3', JSON.stringify(this.data));
+    } catch (e) {}
+
+    this.notify();
+    this.isSyncingFromCloud = false;
   }
 
   private async initR2Sync() {
@@ -247,24 +294,7 @@ export class CoupleStore {
     try {
       const r2Data = await loadAllDataFromR2();
       if (r2Data) {
-        this.data = {
-          settings: { ...this.data.settings, ...(r2Data.settings || {}) },
-          partners: this.data.partners.map((lp) => {
-            const rp = r2Data.partners?.find((p: any) => p.id === lp.id);
-            return rp ? { ...lp, ...rp, avatar: lp.avatar || rp.avatar } : lp;
-          }),
-          countdowns: mergeListsById(this.data.countdowns, r2Data.countdowns),
-          memories: mergeListsById(this.data.memories, r2Data.memories),
-          notes: mergeListsById(this.data.notes, r2Data.notes),
-          bucketList: mergeListsById(this.data.bucketList, r2Data.bucketList),
-          loveJar: mergeListsById(this.data.loveJar, r2Data.loveJar),
-          timeline: mergeListsById(this.data.timeline, r2Data.timeline),
-          nicknames: mergeListsById(this.data.nicknames, r2Data.nicknames),
-          insideJokes: mergeListsById(this.data.insideJokes, r2Data.insideJokes),
-          comfortDoors: mergeListsById(this.data.comfortDoors, r2Data.comfortDoors),
-          futureDreams: mergeListsById(this.data.futureDreams, r2Data.futureDreams)
-        };
-        this.notify();
+        this.applyRemoteData(r2Data);
       }
     } catch (e) {
       console.warn('R2 boot sync note:', e);
@@ -276,27 +306,17 @@ export class CoupleStore {
       const mediaMap = await getAllMediaItems();
       let hasUpdates = false;
 
-      // Hydrate partner avatars
-      if (mediaMap['partner_avatar_partner1'] && this.data.partners[0]) {
+      // Hydrate partner avatars if local avatar is missing
+      if (mediaMap['partner_avatar_partner1'] && this.data.partners[0] && !this.data.partners[0].avatar) {
         this.data.partners[0].avatar = mediaMap['partner_avatar_partner1'];
         hasUpdates = true;
       }
-      if (mediaMap['partner_avatar_partner2'] && this.data.partners[1]) {
+      if (mediaMap['partner_avatar_partner2'] && this.data.partners[1] && !this.data.partners[1].avatar) {
         this.data.partners[1].avatar = mediaMap['partner_avatar_partner2'];
         hasUpdates = true;
       }
 
-      // Hydrate memories
-      const updatedMemories = this.data.memories.map((m) => {
-        if (mediaMap[m.id]) {
-          hasUpdates = true;
-          return { ...m, imageUrl: mediaMap[m.id] };
-        }
-        return m;
-      });
-
       if (hasUpdates) {
-        this.data.memories = updatedMemories;
         this.notify();
       }
     } catch (e) {
@@ -374,29 +394,7 @@ export class CoupleStore {
         if (docSnap.exists()) {
           const remote = docSnap.data() as any;
           if (remote) {
-            // Smart non-destructive merge across all 7+ features
-            this.data = {
-              settings: { ...this.data.settings, ...(remote.settings || {}) },
-              partners: this.data.partners.map((lp) => {
-                const rp = remote.partners?.find((p: any) => p.id === lp.id);
-                return rp ? { ...lp, ...rp, avatar: lp.avatar || rp.avatar } : lp;
-              }),
-              countdowns: mergeListsById(this.data.countdowns, remote.countdowns),
-              memories: mergeListsById(this.data.memories, remote.memories),
-              notes: mergeListsById(this.data.notes, remote.notes),
-              bucketList: mergeListsById(this.data.bucketList, remote.bucketList),
-              loveJar: mergeListsById(this.data.loveJar, remote.loveJar),
-              timeline: mergeListsById(this.data.timeline, remote.timeline),
-              nicknames: mergeListsById(this.data.nicknames, remote.nicknames),
-              insideJokes: mergeListsById(this.data.insideJokes, remote.insideJokes),
-              comfortDoors: mergeListsById(this.data.comfortDoors, remote.comfortDoors),
-              futureDreams: mergeListsById(this.data.futureDreams, remote.futureDreams)
-            };
-
-            try {
-              localStorage.setItem('asmi_couple_store_v3', JSON.stringify(this.data));
-            } catch (e) {}
-            this.notify();
+            this.applyRemoteData(remote);
           }
         } else {
           // Push initial data to cloud
@@ -409,7 +407,7 @@ export class CoupleStore {
   }
 
   private async syncToFirebase() {
-    if (!firestoreDb) return;
+    if (!firestoreDb || this.isSyncingFromCloud) return;
     try {
       const docRef = doc(firestoreDb, 'couple_hub', 'main_data');
       await setDoc(docRef, this.data, { merge: true });
@@ -479,13 +477,6 @@ export class CoupleStore {
     this.data.memories = [created, ...this.data.memories];
     this.saveLocal();
     return created;
-  }
-  likeMemory(id: string): Memory {
-    this.data.memories = this.data.memories.map((m) =>
-      m.id === id ? { ...m, likes: m.likes + 1 } : m
-    );
-    this.saveLocal();
-    return this.data.memories.find((m) => m.id === id)!;
   }
   deleteMemory(id: string) {
     this.data.memories = this.data.memories.filter((m) => m.id !== id);
