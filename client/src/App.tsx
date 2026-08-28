@@ -5,7 +5,6 @@ import { LoveToastProvider } from './context/LoveToastContext';
 import { SocketProvider } from './context/SocketContext';
 import { Navbar } from './components/Navbar';
 import { HeartShower } from './components/HeartShower';
-import { LoveTouchReceiver } from './components/LoveTouchReceiver';
 import { ProfileModal } from './components/ProfileModal';
 import { FirebaseSettingsModal } from './components/FirebaseSettingsModal';
 import { LogoSettingsModal } from './components/LogoSettingsModal';
@@ -25,7 +24,6 @@ import { Heart } from 'lucide-react';
 
 const MainApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [isLoveModalOpen, setIsLoveModalOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
   const [isLogoModalOpen, setIsLogoModalOpen] = useState(false);
@@ -42,7 +40,6 @@ const MainApp: React.FC = () => {
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        onOpenLoveModal={() => setIsLoveModalOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
         onOpenFirebaseModal={() => setIsFirebaseModalOpen(true)}
         onOpenLogoModal={() => setIsLogoModalOpen(true)}
@@ -56,7 +53,6 @@ const MainApp: React.FC = () => {
         {activeTab === 'dashboard' && (
           <DashboardView
             onNavigate={(tab) => setActiveTab(tab)}
-            onOpenLoveModal={() => setIsLoveModalOpen(true)}
           />
         )}
         {activeTab === 'scrapbook' && <ScrapbookView />}
@@ -98,9 +94,6 @@ const MainApp: React.FC = () => {
         isOpen={isGoogleDriveModalOpen}
         onClose={() => setIsGoogleDriveModalOpen(false)}
       />
-
-      {/* Real-time Love Touch Receiver Experience */}
-      <LoveTouchReceiver />
 
       {/* Romantic Footer */}
       <footer className="py-6 border-t border-rose-200/50 bg-white/40 backdrop-blur-xs text-center text-xs text-stone-500 space-y-2">

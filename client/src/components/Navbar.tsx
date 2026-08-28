@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Sparkles, Star, Edit3, HardDrive, FolderHeart } from 'lucide-react';
+import { Heart, Sparkles, Star, Edit3, HardDrive, FolderHeart, PhoneCall } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { isFirebaseConnected } from '../services/firebase';
 import { isGoogleDriveConfigured } from '../services/googleDrive';
@@ -9,26 +9,24 @@ import { motion } from 'framer-motion';
 interface NavbarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  onOpenLoveModal: () => void;
+  onOpenLoveModal?: () => void;
   onOpenProfile: () => void;
   onOpenFirebaseModal: () => void;
   onOpenLogoModal: () => void;
-  onOpenR2Modal: () => void;
-  onOpenCloudinaryModal: () => void;
+  onOpenR2Modal?: () => void;
+  onOpenCloudinaryModal?: () => void;
   onOpenGoogleDriveModal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
-  onOpenLoveModal,
   onOpenProfile,
   onOpenFirebaseModal,
   onOpenLogoModal,
   onOpenGoogleDriveModal
 }) => {
   const { currentPartner, otherPartner, switchPartner } = useAuth();
-  const firebaseConnected = isFirebaseConnected();
   const driveConnected = isGoogleDriveConfigured();
   const [settings, setSettings] = useState<SiteSettings>(() => coupleStore.getSettings());
 
@@ -38,6 +36,12 @@ export const Navbar: React.FC<NavbarProps> = ({
     });
     return unsubscribe;
   }, []);
+
+  // Dial numbers:
+  // Sahil calls Asmi -> 8433821267
+  // Asmi calls Sahil -> 7208306264
+  const missingYouTel = currentPartner?.id === 'partner1' ? 'tel:8433821267' : 'tel:7208306264';
+  const partnerName = currentPartner?.id === 'partner1' ? 'Asmi (Supari)' : 'Sahil (BabyGirl)';
 
   return (
     <header className="sticky top-0 z-40 w-full glass-panel border-b border-rose-200/60 shadow-xs">
@@ -81,14 +85,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Quick Action Pills */}
-          <div className="hidden md:flex items-center gap-2">
-            <button
-              onClick={onOpenLoveModal}
-              className="px-3.5 py-1.5 rounded-full bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white text-xs font-bold shadow-md shadow-rose-200 transition flex items-center gap-1.5 active:scale-95 cursor-pointer"
+          {/* Quick Action: Missing You (One-Tap Direct Phone Call) */}
+          <div className="flex items-center gap-2">
+            <a
+              href={missingYouTel}
+              className="px-3.5 py-1.5 rounded-full bg-linear-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white text-xs font-extrabold shadow-md shadow-rose-200 transition flex items-center gap-1.5 active:scale-95 cursor-pointer hover:scale-105"
+              title={`Call ${partnerName}`}
             >
-              <Heart size={13} className="fill-white" /> Send Love Touch
-            </button>
+              <PhoneCall size={13} className="animate-pulse" />
+              <span>Missing You 🥺📞</span>
+            </a>
           </div>
 
           {/* Persona Switcher & Profile */}
@@ -106,7 +112,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   title="Switch to Sahil (BabyGirl)"
                 >
                   <span className="w-2 h-2 rounded-full bg-indigo-500" />
-                  Sahil <span className="text-[10px] opacity-75 font-normal">BabyGirl</span>
+                  Sahil <span className="text-[10px] opacity-75 font-normal hidden sm:inline">BabyGirl</span>
                 </button>
                 <button
                   onClick={() => switchPartner('partner2')}
@@ -118,7 +124,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   title="Switch to Asmi (Supari / Girl)"
                 >
                   <span className="w-2 h-2 rounded-full bg-pink-500" />
-                  Asmi <span className="text-[10px] opacity-75 font-normal">Supari / Girl</span>
+                  Asmi <span className="text-[10px] opacity-75 font-normal hidden sm:inline">Supari / Girl</span>
                 </button>
               </div>
             )}
@@ -153,10 +159,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              className={`px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all cursor-pointer ${
                 activeTab === tab.id
-                  ? 'bg-rose-500 text-white shadow-xs shadow-rose-200'
-                  : 'text-stone-600 hover:bg-rose-50 hover:text-rose-600'
+                  ? 'bg-linear-to-r from-rose-500 to-pink-500 text-white shadow-md shadow-rose-200 scale-102'
+                  : 'bg-white/90 text-stone-700 hover:bg-rose-50 border border-rose-100 hover:text-rose-600 shadow-xs'
               }`}
             >
               {tab.label}
