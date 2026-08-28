@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Sparkles, Star, Edit3, HardDrive, FolderHeart, PhoneCall } from 'lucide-react';
+import { Heart, Sparkles, Star, Edit3, HardDrive, FolderHeart } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { isFirebaseConnected } from '../services/firebase';
 import { isGoogleDriveConfigured } from '../services/googleDrive';
@@ -92,8 +92,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="px-3.5 py-1.5 rounded-full bg-linear-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white text-xs font-extrabold shadow-md shadow-rose-200 transition flex items-center gap-1.5 active:scale-95 cursor-pointer hover:scale-105"
               title={`Call ${partnerName}`}
             >
-              <PhoneCall size={13} className="animate-pulse" />
-              <span>Missing You 🥺📞</span>
+              <span>Missing You 🥺</span>
             </a>
           </div>
 
