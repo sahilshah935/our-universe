@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSound } from '../context/SoundContext';
 import { useLoveToast } from '../context/LoveToastContext';
 import { uploadImage } from '../services/imageUpload';
-import { Sparkles, Plus, Calendar, Heart, Camera, Compass, Trash2, ArrowDown, Star, MapPin } from 'lucide-react';
+import { Sparkles, Plus, Calendar, Heart, Camera, Compass, Trash2, ArrowDown, Star, MapPin, Upload, Image as ImageIcon, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export const RelationshipTimeline: React.FC = () => {
@@ -24,6 +24,7 @@ export const RelationshipTimeline: React.FC = () => {
   const [icon, setIcon] = useState('💖');
   const [photoUrl, setPhotoUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // New dream form
   const [dreamTitle, setDreamTitle] = useState('');
@@ -48,7 +49,7 @@ export const RelationshipTimeline: React.FC = () => {
     try {
       const url = await uploadImage(file);
       setPhotoUrl(url);
-      showLoveSuccess('Story photo uploaded! 📸', '✨');
+      showLoveSuccess('Story photo uploaded to Google Drive! 📸', '✨');
     } catch (err) {
       console.error(err);
       showLoveWarning('Failed to upload photo, my love! 🥺');
@@ -57,7 +58,7 @@ export const RelationshipTimeline: React.FC = () => {
     }
   };
 
-  const handleAddStep = (e: React.FormEvent) => {
+  const handleAddStep = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
       showLoveWarning('Please enter a milestone title for our story, darling! 🗺️', '🥺');
@@ -67,24 +68,31 @@ export const RelationshipTimeline: React.FC = () => {
       showLoveWarning('Please pick the special date when this moment happened, my love! 📅', '✨');
       return;
     }
-    if (!currentPartner) return;
 
-    coupleStore.addTimelineMilestone({
-      title: title.trim(),
-      date,
-      description: description.trim(),
-      icon,
-      photoUrl: photoUrl || undefined
-    });
+    setIsSaving(true);
+    try {
+      coupleStore.addTimelineMilestone({
+        title: title.trim(),
+        date,
+        description: description.trim() || '',
+        icon,
+        photoUrl: photoUrl.trim() || ''
+      });
 
-    playSparkle();
-    confetti({ particleCount: 50, spread: 60 });
-    showLoveSuccess('Story chapter pinned to our relationship timeline! 🗺️💖', '🎉');
-    setTitle('');
-    setDate('');
-    setDescription('');
-    setPhotoUrl('');
-    setIsAddingStep(false);
+      playSparkle();
+      confetti({ particleCount: 50, spread: 60 });
+      showLoveSuccess('Story chapter pinned to our relationship timeline! 🗺️💖', '🎉');
+      setTitle('');
+      setDate('');
+      setDescription('');
+      setPhotoUrl('');
+      setIsAddingStep(false);
+    } catch (err) {
+      console.error(err);
+      showLoveWarning('Could not save milestone step right now 🥺');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleAddDream = (e: React.FormEvent) => {
@@ -118,324 +126,329 @@ export const RelationshipTimeline: React.FC = () => {
           <Sparkles size={14} />
           From Strangers to Mine Forever
         </span>
-        <h2 className="text-3xl sm:text-5xl font-extrabold text-stone-900 font-serif-title">
-          Our Love Story Timeline 🗺️
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-stone-900 font-serif-title tracking-tight">
+          Our Love Story & Journey 🗺️
         </h2>
-        <p className="text-stone-500 text-sm sm:text-base leading-relaxed">
-          A scrolling journey through every turning point, first conversation, inside joke, and sweet memory.
+        <p className="text-stone-600 text-xs sm:text-sm leading-relaxed">
+          Every conversation, inside joke, and midnight phone call brought us here.
         </p>
 
         <button
+          type="button"
           onClick={() => setIsAddingStep(true)}
-          className="mt-4 py-2.5 px-5 rounded-2xl bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold text-xs shadow-md shadow-rose-200 transition inline-flex items-center gap-1.5"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-2xl font-bold text-xs shadow-md shadow-rose-200 transition cursor-pointer hover:scale-105"
         >
-          <Plus size={15} /> Add Milestone Step
+          <Plus size={16} /> Add Milestone Step
         </button>
       </div>
 
-      {/* Vertical Timeline Steps */}
-      <div className="relative pl-6 sm:pl-10 border-l-3 border-dashed border-rose-300 space-y-12 my-8">
+      {/* Vertical Aesthetic Timeline */}
+      <div className="relative pl-6 sm:pl-10 space-y-8 before:absolute before:left-3 sm:before:left-5 before:top-3 before:bottom-3 before:w-1 before:bg-linear-to-b before:from-rose-400 before:via-pink-300 before:to-purple-400 before:rounded-full">
         {timeline.map((step, idx) => (
           <motion.div
             key={step.id}
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: idx * 0.05 }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: idx * 0.08 }}
             className="relative group"
           >
-            {/* Step Marker Badge */}
-            <div className="absolute -left-[41px] sm:-left-[57px] top-1.5 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-linear-to-tr from-rose-500 to-pink-500 text-white flex items-center justify-center text-xl sm:text-2xl shadow-lg ring-4 ring-white">
+            {/* Timeline node icon */}
+            <div className="absolute -left-6 sm:-left-10 top-1.5 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white border-2 border-rose-400 shadow-md flex items-center justify-center text-xs sm:text-sm z-10 group-hover:scale-115 group-hover:border-rose-600 transition">
               {step.icon || '💖'}
             </div>
 
-            {/* Step Card Content */}
-            <div className="p-6 sm:p-8 rounded-3xl bg-white/95 backdrop-blur-md border border-rose-100 shadow-md hover:shadow-xl transition-all">
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                <span className="text-xs font-bold font-mono text-rose-600 bg-rose-50 px-3 py-1 rounded-full flex items-center gap-1">
-                  <Calendar size={13} />
-                  {new Date(step.date).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
-                </span>
-                <span className="text-xs font-bold text-stone-400">Step #{idx + 1}</span>
-              </div>
-
-              <h3 className="text-xl sm:text-2xl font-bold text-stone-900 font-serif-title mb-2">
-                {step.title}
-              </h3>
-
-              {step.description && (
-                <p className="text-stone-700 text-sm sm:text-base font-handwriting text-xl leading-relaxed mb-4">
-                  "{step.description}"
-                </p>
-              )}
-
-              {/* Photo if attached */}
-              {step.photoUrl && (
-                <div className="mt-4 rounded-2xl overflow-hidden border border-stone-200 max-h-72">
-                  <img src={step.photoUrl} alt={step.title} className="w-full h-full object-cover" />
+            {/* Card Content */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-white border border-rose-100 shadow-sm hover:shadow-md transition space-y-3 relative">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <span className="text-[11px] font-bold text-rose-500 uppercase tracking-wider flex items-center gap-1">
+                    <Calendar size={12} /> {step.date}
+                  </span>
+                  <h3 className="text-lg sm:text-xl font-bold text-stone-800 font-serif-title mt-0.5">
+                    {step.title}
+                  </h3>
                 </div>
-              )}
 
-              <div className="mt-4 pt-3 border-t border-stone-100 flex justify-end">
                 <button
                   onClick={() => {
                     playHeartPop();
                     coupleStore.deleteTimelineMilestone(step.id);
                   }}
-                  className="text-stone-300 hover:text-rose-500 text-xs transition"
+                  className="p-1.5 text-stone-300 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                  title="Delete Milestone"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={15} />
                 </button>
               </div>
+
+              {step.description && (
+                <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-handwriting text-lg text-stone-700 bg-rose-50/30 p-3 rounded-2xl border border-rose-100/60">
+                  "{step.description}"
+                </p>
+              )}
+
+              {step.photoUrl && (
+                <div className="w-full max-w-sm rounded-2xl overflow-hidden border border-rose-200 shadow-xs">
+                  <img src={step.photoUrl} alt={step.title} className="w-full h-48 object-cover hover:scale-103 transition duration-300" />
+                </div>
+              )}
             </div>
           </motion.div>
         ))}
       </div>
 
-      {/* SECTION 2: THE NEXT CHAPTER (FUTURE DREAMS) */}
-      <div className="p-8 sm:p-10 rounded-3xl bg-linear-to-br from-purple-900 via-indigo-900 to-rose-950 text-white shadow-2xl relative overflow-hidden">
-        <div className="absolute -top-12 -right-12 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl" />
-
-        <div className="relative z-10">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <div>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-xs font-bold uppercase tracking-wider text-rose-200 mb-1">
-                <Star size={13} className="fill-amber-300 text-amber-300" />
-                The Next Chapter
-              </span>
-              <h3 className="text-2xl sm:text-4xl font-extrabold font-serif-title">
-                What We’re Excited For Together ✨
-              </h3>
-              <p className="text-purple-200 text-xs sm:text-sm mt-1">
-                Future trips, spontaneous cozy Sundays, and forever memories we haven’t made yet.
-              </p>
+      {/* The Next Chapter & Future Dreams */}
+      <div className="mt-16 p-6 sm:p-8 rounded-3xl bg-linear-to-br from-indigo-900 via-purple-900 to-pink-900 text-white shadow-xl space-y-6 relative overflow-hidden">
+        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/10 backdrop-blur-md text-pink-300 text-xs font-bold uppercase tracking-wider mb-1 border border-white/10">
+              <Compass size={13} /> The Next Chapter 🏔️
             </div>
+            <h3 className="text-2xl sm:text-3xl font-extrabold font-serif-title">
+              Our Future Dreams & Plans ✨
+            </h3>
+            <p className="text-purple-200/80 text-xs sm:text-sm mt-1">
+              Things we can't wait to experience together in the coming years.
+            </p>
+          </div>
 
-            <button
-              onClick={() => setIsAddingDream(true)}
-              className="py-2.5 px-4 rounded-xl bg-white text-indigo-950 font-bold text-xs hover:bg-rose-50 transition flex items-center gap-1.5 shrink-0"
+          <button
+            type="button"
+            onClick={() => setIsAddingDream(true)}
+            className="py-2.5 px-4 rounded-xl bg-white text-purple-950 font-bold text-xs shadow-md hover:bg-pink-100 transition flex items-center gap-1.5 cursor-pointer shrink-0"
+          >
+            <Plus size={15} /> Add Future Dream
+          </button>
+        </div>
+
+        <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {futureDreams.map((dream) => (
+            <motion.div
+              key={dream.id}
+              whileHover={{ y: -3 }}
+              className="p-5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 flex flex-col justify-between"
             >
-              <Plus size={14} /> Add Future Dream
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {futureDreams.map((dream) => (
-              <motion.div
-                key={dream.id}
-                whileHover={{ scale: 1.02 }}
-                className="p-5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-3xl">{dream.emoji}</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/20 text-rose-200">
-                      {dream.targetYear || 'Future'}
-                    </span>
-                  </div>
-                  <h4 className="text-base font-bold text-white mb-1">{dream.title}</h4>
-                  <p className="text-xs text-purple-100/80 leading-relaxed">{dream.description}</p>
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="text-2xl">{dream.emoji || '🏡'}</span>
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-pink-500/30 text-pink-200 font-bold">
+                    {dream.targetYear}
+                  </span>
                 </div>
+                <h4 className="text-base font-bold text-white mb-1">{dream.title}</h4>
+                <p className="text-xs text-purple-100/80 leading-relaxed">{dream.description}</p>
+              </div>
 
-                <div className="mt-4 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-purple-300">
-                  <span>Dreamt by {dream.addedById === 'partner1' ? 'Sahil' : 'Asmi'}</span>
-                  <button
-                    onClick={() => {
-                      playHeartPop();
-                      coupleStore.deleteFutureDream(dream.id);
-                    }}
-                    className="hover:text-rose-400 p-1 transition"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+              <div className="mt-4 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-purple-300">
+                <span>Dreamt by {dream.addedById === 'partner1' ? 'Sahil' : 'Asmi'}</span>
+                <button
+                  onClick={() => {
+                    playHeartPop();
+                    coupleStore.deleteFutureDream(dream.id);
+                  }}
+                  className="hover:text-rose-400 p-1 transition cursor-pointer"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
 
       {/* Add Milestone Step Modal */}
-      <AnimatePresence>
-        {isAddingStep && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm overflow-y-auto">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative max-w-lg w-full bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-rose-200 my-auto"
+      {isAddingStep && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm overflow-y-auto">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="relative max-w-lg w-full bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-rose-200 my-auto text-stone-800"
+          >
+            <button
+              type="button"
+              onClick={() => setIsAddingStep(false)}
+              className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-rose-50 cursor-pointer"
             >
-              <button
-                onClick={() => setIsAddingStep(false)}
-                className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-rose-50"
-              >
-                ✕
-              </button>
+              <X size={20} />
+            </button>
 
-              <h3 className="text-2xl font-bold text-stone-800 font-serif-title mb-4">
-                Add Timeline Milestone 💖
-              </h3>
+            <h3 className="text-2xl font-bold text-stone-800 font-serif-title mb-4">
+              Add Timeline Milestone 💖
+            </h3>
 
-              <form onSubmit={handleAddStep} noValidate className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Title</label>
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g. The First Date"
-                      className="w-full p-2.5 text-xs rounded-xl border border-stone-200"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Date</label>
-                    <input
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      className="w-full p-2.5 text-xs rounded-xl border border-stone-200"
-                      required
-                    />
-                  </div>
-                </div>
-
+            <form onSubmit={handleAddStep} noValidate className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Emoji Icon</label>
-                  <div className="flex gap-2 text-xl">
-                    {['💬', '☕', '😂', '🩹', '🏡', '✈️', '💍', '✨'].map((em) => (
-                      <button
-                        key={em}
-                        type="button"
-                        onClick={() => setIcon(em)}
-                        className={`p-1.5 rounded-lg border ${icon === em ? 'border-rose-500 bg-rose-50' : 'border-stone-200'}`}
-                      >
-                        {em}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
-                    Why That Moment Mattered (In your natural voice)
-                  </label>
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Write what you felt and why this moment was unforgettable..."
-                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 font-handwriting text-lg resize-none"
-                    rows={3}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
-                    Upload Photo (Optional)
-                  </label>
+                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Title</label>
                   <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    className="w-full text-xs"
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. The First Date"
+                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    required
                   />
-                  {isUploading && <span className="text-[11px] text-stone-400">Uploading photo...</span>}
                 </div>
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Date</label>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    required
+                  />
+                </div>
+              </div>
 
-                <button
-                  type="submit"
-                  disabled={isUploading || !title || !date}
-                  className="w-full py-3 px-4 bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold rounded-xl text-xs shadow-md transition"
-                >
-                  Save Milestone Step ✨
-                </button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+              <div>
+                <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Emoji Icon</label>
+                <div className="flex gap-2 text-xl">
+                  {['💬', '☕', '😂', '🩹', '🏡', '✈️', '💍', '✨'].map((em) => (
+                    <button
+                      key={em}
+                      type="button"
+                      onClick={() => setIcon(em)}
+                      className={`p-1.5 rounded-lg border cursor-pointer ${icon === em ? 'border-rose-500 bg-rose-50 shadow-xs' : 'border-stone-200'}`}
+                    >
+                      {em}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
+                  Why That Moment Mattered (Handwritten Note)
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Write what you felt and why this moment was unforgettable..."
+                  className="w-full p-2.5 text-xs rounded-xl border border-stone-200 font-handwriting text-lg resize-none focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  rows={3}
+                />
+              </div>
+
+              {/* Photo Upload or URL */}
+              <div>
+                <label className="block text-xs font-bold text-stone-700 uppercase mb-1 flex items-center gap-1">
+                  <ImageIcon size={13} className="text-rose-500" /> Photo (Saved to Google Drive)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={photoUrl}
+                    onChange={(e) => setPhotoUrl(e.target.value)}
+                    placeholder="Paste image URL or click Choose File..."
+                    className="flex-1 p-2.5 text-xs rounded-xl border border-stone-200 bg-stone-50/50 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  />
+                  <label className="py-2 px-3.5 bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-xl text-xs font-bold cursor-pointer transition flex items-center gap-1.5 shrink-0 shadow-xs">
+                    <Upload size={14} />
+                    {isUploading ? 'Uploading...' : 'Choose File'}
+                    <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+                  </label>
+                </div>
+                {photoUrl && (
+                  <div className="mt-2.5 w-full h-36 rounded-2xl overflow-hidden border-2 border-rose-200 relative group">
+                    <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                    <div className="absolute top-2 right-2 px-2 py-0.5 bg-black/60 text-white text-[10px] font-bold rounded-md">
+                      Photo Loaded ✨
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isUploading || isSaving || !title.trim() || !date}
+                className="w-full py-3 px-4 bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md shadow-rose-200 transition cursor-pointer disabled:opacity-60"
+              >
+                {isUploading ? 'Uploading Photo to Google Drive... ⏳' : isSaving ? 'Saving Milestone... ✨' : 'Save Milestone Step ✨'}
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
 
       {/* Add Future Dream Modal */}
-      <AnimatePresence>
-        {isAddingDream && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative max-w-md w-full bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-rose-200 text-stone-800"
+      {isAddingDream && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm overflow-y-auto">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="relative max-w-md w-full bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-purple-200 my-auto text-stone-800"
+          >
+            <button
+              type="button"
+              onClick={() => setIsAddingDream(false)}
+              className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-purple-50 cursor-pointer"
             >
-              <button
-                onClick={() => setIsAddingDream(false)}
-                className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-rose-50"
-              >
-                ✕
-              </button>
+              <X size={20} />
+            </button>
 
-              <h3 className="text-xl font-bold font-serif-title mb-4">Add Future Dream ✨</h3>
+            <h3 className="text-2xl font-bold text-stone-800 font-serif-title mb-4">
+              Add Future Dream 🌟
+            </h3>
 
-              <form onSubmit={handleAddDream} noValidate className="space-y-3">
-                <div className="grid grid-cols-4 gap-2">
-                  <div className="col-span-1">
-                    <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Emoji</label>
-                    <input
-                      type="text"
-                      value={dreamEmoji}
-                      onChange={(e) => setDreamEmoji(e.target.value)}
-                      className="w-full p-2 text-xs rounded-xl border border-stone-200 text-center text-xl"
-                    />
-                  </div>
-                  <div className="col-span-3">
-                    <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Dream Title</label>
-                    <input
-                      type="text"
-                      value={dreamTitle}
-                      onChange={(e) => setDreamTitle(e.target.value)}
-                      placeholder="e.g. Build our dream home with a garden"
-                      className="w-full p-2 text-xs rounded-xl border border-stone-200"
-                      required
-                    />
-                  </div>
-                </div>
+            <form onSubmit={handleAddDream} noValidate className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Dream Title</label>
+                <input
+                  type="text"
+                  value={dreamTitle}
+                  onChange={(e) => setDreamTitle(e.target.value)}
+                  placeholder="e.g. Road Trip across Amalfi Coast"
+                  className="w-full p-2.5 text-xs rounded-xl border border-stone-200"
+                  required
+                />
+              </div>
 
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Timeframe / Year</label>
+                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Emoji</label>
+                  <input
+                    type="text"
+                    value={dreamEmoji}
+                    onChange={(e) => setDreamEmoji(e.target.value)}
+                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 text-center text-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Target Year</label>
                   <input
                     type="text"
                     value={dreamYear}
                     onChange={(e) => setDreamYear(e.target.value)}
-                    placeholder="e.g. 2026 / Next Summer / Forever"
-                    className="w-full p-2 text-xs rounded-xl border border-stone-200"
+                    placeholder="2026 or Soon"
+                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200"
                   />
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Description</label>
-                  <textarea
-                    value={dreamDesc}
-                    onChange={(e) => setDreamDesc(e.target.value)}
-                    placeholder="Describe how we will celebrate it..."
-                    className="w-full p-2 text-xs rounded-xl border border-stone-200 resize-none"
-                    rows={2}
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Description</label>
+                <textarea
+                  value={dreamDesc}
+                  onChange={(e) => setDreamDesc(e.target.value)}
+                  placeholder="Describe how we'll spend that moment together..."
+                  className="w-full p-2.5 text-xs rounded-xl border border-stone-200 font-handwriting text-lg resize-none"
+                  rows={3}
+                />
+              </div>
 
-                <button
-                  type="submit"
-                  className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-md transition"
-                >
-                  Pin to The Next Chapter 🌟
-                </button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+              <button
+                type="submit"
+                className="w-full py-3 px-4 bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl text-xs shadow-md transition cursor-pointer"
+              >
+                Add to Future Dreams 🌟
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

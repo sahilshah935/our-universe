@@ -6,7 +6,6 @@ import { SocketProvider } from './context/SocketContext';
 import { Navbar } from './components/Navbar';
 import { HeartShower } from './components/HeartShower';
 import { LoveTouchReceiver } from './components/LoveTouchReceiver';
-import { LoveJarModal } from './components/LoveJarModal';
 import { ProfileModal } from './components/ProfileModal';
 import { FirebaseSettingsModal } from './components/FirebaseSettingsModal';
 import { LogoSettingsModal } from './components/LogoSettingsModal';
@@ -27,7 +26,6 @@ import { Heart } from 'lucide-react';
 const MainApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isLoveModalOpen, setIsLoveModalOpen] = useState(false);
-  const [isLoveJarOpen, setIsLoveJarOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
   const [isLogoModalOpen, setIsLogoModalOpen] = useState(false);
@@ -46,7 +44,6 @@ const MainApp: React.FC = () => {
         setActiveTab={setActiveTab}
         onOpenLoveModal={() => setIsLoveModalOpen(true)}
         onOpenProfile={() => setIsProfileOpen(true)}
-        onOpenLoveJar={() => setIsLoveJarOpen(true)}
         onOpenFirebaseModal={() => setIsFirebaseModalOpen(true)}
         onOpenLogoModal={() => setIsLogoModalOpen(true)}
         onOpenR2Modal={() => setIsR2ModalOpen(true)}
@@ -60,7 +57,6 @@ const MainApp: React.FC = () => {
           <DashboardView
             onNavigate={(tab) => setActiveTab(tab)}
             onOpenLoveModal={() => setIsLoveModalOpen(true)}
-            onOpenLoveJar={() => setIsLoveJarOpen(true)}
           />
         )}
         {activeTab === 'scrapbook' && <ScrapbookView />}
@@ -76,11 +72,6 @@ const MainApp: React.FC = () => {
       <ProfileModal
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
-      />
-
-      <LoveJarModal
-        isOpen={isLoveJarOpen}
-        onClose={() => setIsLoveJarOpen(false)}
       />
 
       <FirebaseSettingsModal

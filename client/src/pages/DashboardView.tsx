@@ -12,13 +12,11 @@ import { motion } from 'framer-motion';
 interface DashboardViewProps {
   onNavigate: (tab: string) => void;
   onOpenLoveModal: () => void;
-  onOpenLoveJar: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   onNavigate,
-  onOpenLoveModal,
-  onOpenLoveJar
+  onOpenLoveModal
 }) => {
   const { partners } = useAuth();
   const [storedPartners, setStoredPartners] = useState<Partner[]>(() => coupleStore.getPartners());

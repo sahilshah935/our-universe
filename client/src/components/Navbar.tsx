@@ -11,7 +11,6 @@ interface NavbarProps {
   setActiveTab: (tab: string) => void;
   onOpenLoveModal: () => void;
   onOpenProfile: () => void;
-  onOpenLoveJar: () => void;
   onOpenFirebaseModal: () => void;
   onOpenLogoModal: () => void;
   onOpenR2Modal: () => void;
@@ -24,7 +23,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveTab,
   onOpenLoveModal,
   onOpenProfile,
-  onOpenLoveJar,
   onOpenFirebaseModal,
   onOpenLogoModal,
   onOpenGoogleDriveModal
@@ -90,13 +88,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="px-3.5 py-1.5 rounded-full bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white text-xs font-bold shadow-md shadow-rose-200 transition flex items-center gap-1.5 active:scale-95 cursor-pointer"
             >
               <Heart size={13} className="fill-white" /> Send Love Touch
-            </button>
-
-            <button
-              onClick={onOpenLoveJar}
-              className="px-3 py-1.5 rounded-full bg-white/80 hover:bg-rose-50 border border-rose-200 text-stone-700 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
-            >
-              <Star size={14} className="text-amber-500 fill-amber-400" /> Origami Love Jar
             </button>
           </div>
 
