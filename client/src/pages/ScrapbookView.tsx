@@ -143,15 +143,18 @@ export const ScrapbookView: React.FC = () => {
         </div>
 
         {/* Add Memory Button */}
-        <motion.button
-          whileHover={{ scale: 1.04, y: -2 }}
-          whileTap={{ scale: 0.96 }}
-          onClick={() => setIsAddingMemory(true)}
-          className="relative z-10 py-3 px-5 rounded-2xl bg-linear-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-rose-200 transition-all flex items-center gap-2 shrink-0 cursor-pointer"
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsAddingMemory(true);
+          }}
+          className="relative z-10 py-3 px-5 rounded-2xl bg-linear-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-rose-200 transition-all flex items-center gap-2 shrink-0 cursor-pointer hover:scale-105 active:scale-95"
         >
           <Plus size={18} />
           <span>Add Polaroid Memory 📸</span>
-        </motion.button>
+        </button>
       </div>
 
       {/* Chapters Filter Pills */}
@@ -184,7 +187,12 @@ export const ScrapbookView: React.FC = () => {
             Pin your favorite memories, late-night dates, and silly photos into our couple scrapbook!
           </p>
           <button
-            onClick={() => setIsAddingMemory(true)}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsAddingMemory(true);
+            }}
             className="py-2.5 px-5 rounded-xl bg-linear-to-r from-rose-500 to-pink-500 text-white font-bold text-xs shadow-md shadow-rose-200 hover:scale-105 transition cursor-pointer"
           >
             + Pin Our First Polaroid 📌

@@ -57,7 +57,13 @@ const MainApp: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
-        {activeTab === 'dashboard' && <DashboardView />}
+        {activeTab === 'dashboard' && (
+          <DashboardView
+            onNavigate={(tab) => setActiveTab(tab)}
+            onOpenLoveModal={() => setIsLoveModalOpen(true)}
+            onOpenLoveJar={() => setIsLoveJarOpen(true)}
+          />
+        )}
         {activeTab === 'scrapbook' && <ScrapbookView />}
         {activeTab === 'comfort' && <ComfortSanctuary />}
         {activeTab === 'nicknames' && <NicknameWall />}
