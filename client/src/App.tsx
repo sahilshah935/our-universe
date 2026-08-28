@@ -21,6 +21,7 @@ import { RelationshipTimeline as TimelineView } from './components/RelationshipT
 import { JournalView } from './pages/JournalView';
 import { BucketListView } from './pages/BucketListView';
 import { CustomRoulette as DateRouletteView } from './components/CustomRoulette';
+import { clearBrowserCacheAndReload } from './services/cacheCleaner';
 import { Heart } from 'lucide-react';
 
 const MainApp: React.FC = () => {
@@ -99,9 +100,22 @@ const MainApp: React.FC = () => {
       <LoveTouchReceiver />
 
       {/* Romantic Footer */}
-      <footer className="py-6 border-t border-rose-200/50 bg-white/40 backdrop-blur-xs text-center text-xs text-stone-500">
+      <footer className="py-6 border-t border-rose-200/50 bg-white/40 backdrop-blur-xs text-center text-xs text-stone-500 space-y-2">
         <div className="flex items-center justify-center gap-1.5 font-medium">
           Made with <Heart size={14} className="fill-rose-500 text-rose-500 animate-pulse" /> for Sahil (BabyGirl) & Asmi (Supari / Girl) &bull; Cozy Couple Hub
+        </div>
+        <div>
+          <button
+            onClick={() => {
+              if (window.confirm('Clear all local browser cache and re-sync everything fresh from the cloud? 🧹')) {
+                clearBrowserCacheAndReload();
+              }
+            }}
+            className="text-[11px] text-stone-400 hover:text-rose-500 transition underline cursor-pointer"
+            title="Purge all local browser cache and re-sync from cloud"
+          >
+            🧹 Clear Browser Cache & Re-Sync Fresh
+          </button>
         </div>
       </footer>
     </div>
