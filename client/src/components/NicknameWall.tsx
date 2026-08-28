@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Plus, Sparkles, Trash2, Tag, Quote, Smile } from 'lucide-react';
+import { Heart, Plus, Sparkles, Trash2, Tag, Quote, Smile, Edit3, X } from 'lucide-react';
 import { NicknameItem } from '../types';
 import { coupleStore } from '../services/store';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +13,7 @@ export const NicknameWall: React.FC = () => {
   const { playSparkle, playHeartPop } = useSound();
   const [nicknames, setNicknames] = useState<NicknameItem[]>(() => coupleStore.getNicknames());
   const [isAdding, setIsAdding] = useState(false);
+  const [editingItem, setEditingItem] = useState<NicknameItem | null>(null);
 
   // Form State
   const [forPartner, setForPartner] = useState<'partner1' | 'partner2' | 'both'>('partner2');
@@ -59,9 +60,34 @@ export const NicknameWall: React.FC = () => {
     setIsAdding(false);
   };
 
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem) return;
+    coupleStore.updateNickname(editingItem.id, {
+      forPartnerId: forPartner,
+      name: name.trim() || editingItem.name,
+      tag: tag.trim() || editingItem.tag,
+      explanation: explanation.trim() || editingItem.explanation,
+      bgGradient: selectedGradient
+    });
+    playSparkle();
+    showLoveSuccess('Nickname updated! 💖✨', '🎉');
+    setEditingItem(null);
+  };
+
+  const startEdit = (item: NicknameItem) => {
+    setEditingItem(item);
+    setName(item.name);
+    setForPartner(item.forPartnerId as any);
+    setTag(item.tag);
+    setExplanation(item.explanation);
+    setSelectedGradient(item.bgGradient || 'from-pink-500 to-rose-600');
+  };
+
   const handleDelete = (id: string) => {
     playHeartPop();
     coupleStore.deleteNickname(id);
+    showLoveSuccess('Nickname removed from wall', '🗑️');
   };
 
   const GRADIENTS = [
@@ -90,8 +116,13 @@ export const NicknameWall: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setIsAdding(true)}
-          className="py-3 px-5 rounded-2xl bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold text-xs shadow-lg shadow-rose-200 transition flex items-center gap-2"
+          onClick={() => {
+            setName('');
+            setExplanation('');
+            setTag('Cute & Sweet');
+            setIsAdding(true);
+          }}
+          className="py-3 px-5 rounded-2xl bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold text-xs shadow-lg shadow-rose-200 transition flex items-center gap-2 cursor-pointer hover:scale-105"
         >
           <Plus size={16} /> Add New Nickname
         </button>
@@ -138,24 +169,33 @@ export const NicknameWall: React.FC = () => {
               <div className="mt-6 pt-3 border-t border-stone-100 flex items-center justify-between text-xs text-stone-400">
                 <span className="flex items-center gap-1 font-medium text-rose-500">
                   <Heart size={13} className="fill-rose-500" />
-                  Added by {item.addedById === 'partner1' ? 'Sahil (BabyGirl)' : 'Asmi (Supari)'}
+                  Added by {item.addedById === 'partner1' ? 'Sahil' : 'Asmi'}
                 </span>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="p-1.5 text-stone-300 hover:text-rose-500 rounded-lg transition opacity-0 group-hover:opacity-100"
-                  title="Delete nickname"
-                >
-                  <Trash2 size={15} />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => startEdit(item)}
+                    className="p-1.5 text-stone-400 hover:text-amber-500 rounded-lg transition hover:bg-amber-50 cursor-pointer"
+                    title="Edit nickname"
+                  >
+                    <Edit3 size={15} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    className="p-1.5 text-stone-400 hover:text-rose-500 rounded-lg transition hover:bg-rose-50 cursor-pointer"
+                    title="Delete nickname"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>
         ))}
       </div>
 
-      {/* Add Nickname Modal */}
+      {/* Add / Edit Nickname Modal */}
       <AnimatePresence>
-        {isAdding && (
+        {(isAdding || editingItem) && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -164,25 +204,28 @@ export const NicknameWall: React.FC = () => {
               className="relative max-w-md w-full bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-rose-200"
             >
               <button
-                onClick={() => setIsAdding(false)}
-                className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-rose-50"
+                onClick={() => {
+                  setIsAdding(false);
+                  setEditingItem(null);
+                }}
+                className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-rose-50 cursor-pointer"
               >
-                ✕
+                <X size={18} />
               </button>
 
               <div className="text-center mb-5">
                 <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-500 mx-auto mb-2 flex items-center justify-center text-xl shadow-inner">
-                  <Smile size={22} />
+                  {editingItem ? <Edit3 size={22} /> : <Smile size={22} />}
                 </div>
                 <h3 className="text-2xl font-bold text-stone-800 font-serif-title">
-                  Add Cute Nickname 💖
+                  {editingItem ? 'Edit Nickname 🏷️' : 'Add Cute Nickname 💖'}
                 </h3>
                 <p className="text-stone-500 text-xs mt-1">
-                  Add a new pet name or silly title to our wall!
+                  {editingItem ? 'Update the title or cute story behind this nickname.' : 'Add a new pet name or silly title to our wall!'}
                 </p>
               </div>
 
-              <form onSubmit={handleAdd} noValidate className="space-y-4">
+              <form onSubmit={editingItem ? handleSaveEdit : handleAdd} noValidate className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Nickname</label>
@@ -191,7 +234,7 @@ export const NicknameWall: React.FC = () => {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. Cutie Pie / Supari"
-                      className="w-full p-2.5 text-xs rounded-xl border border-stone-200"
+                      className="w-full p-2.5 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
                       required
                     />
                   </div>
@@ -200,7 +243,7 @@ export const NicknameWall: React.FC = () => {
                     <select
                       value={forPartner}
                       onChange={(e) => setForPartner(e.target.value as any)}
-                      className="w-full p-2.5 text-xs rounded-xl border border-stone-200 bg-white"
+                      className="w-full p-2.5 text-xs rounded-xl border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-rose-400"
                     >
                       <option value="partner2">For Asmi</option>
                       <option value="partner1">For Sahil</option>
@@ -216,7 +259,7 @@ export const NicknameWall: React.FC = () => {
                     value={tag}
                     onChange={(e) => setTag(e.target.value)}
                     placeholder="e.g. Favorite Classic, Drama Queen, Soft Boy"
-                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200"
+                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
                   />
                 </div>
 
@@ -228,8 +271,8 @@ export const NicknameWall: React.FC = () => {
                         key={g.val}
                         type="button"
                         onClick={() => setSelectedGradient(g.val)}
-                        className={`w-8 h-8 rounded-full bg-linear-to-r ${g.val} border-2 ${
-                          selectedGradient === g.val ? 'ring-2 ring-rose-500 scale-110' : 'opacity-70'
+                        className={`w-8 h-8 rounded-full bg-linear-to-r ${g.val} border-2 cursor-pointer ${
+                          selectedGradient === g.val ? 'ring-2 ring-rose-500 scale-110 shadow-xs' : 'opacity-70'
                         } transition`}
                         title={g.label}
                       />
@@ -245,7 +288,7 @@ export const NicknameWall: React.FC = () => {
                     value={explanation}
                     onChange={(e) => setExplanation(e.target.value)}
                     placeholder="Why this nickname? What's the story behind it?"
-                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 font-handwriting text-lg resize-none"
+                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 font-handwriting text-lg resize-none focus:outline-none focus:ring-2 focus:ring-rose-400"
                     rows={3}
                     required
                   />
@@ -253,9 +296,9 @@ export const NicknameWall: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="w-full py-3 px-4 bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold rounded-xl text-xs shadow-md shadow-rose-200 transition"
+                  className="w-full py-3 px-4 bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold rounded-xl text-xs shadow-md shadow-rose-200 transition cursor-pointer"
                 >
-                  Pin To Nickname Wall ✨
+                  {editingItem ? 'Save Nickname Changes ✨' : 'Pin To Nickname Wall ✨'}
                 </button>
               </form>
             </motion.div>

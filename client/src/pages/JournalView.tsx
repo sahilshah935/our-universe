@@ -7,7 +7,7 @@ import { useLoveToast } from '../context/LoveToastContext';
 import { PostItBoard } from '../components/PostItBoard';
 import { TimeCapsuleModal } from '../components/TimeCapsuleModal';
 import { SweetConfirmModal } from '../components/SweetConfirmModal';
-import { Heart, Lock, Unlock, Plus, Trash2 } from 'lucide-react';
+import { Heart, Lock, Unlock, Plus, Trash2, Edit3, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const JournalView: React.FC = () => {
@@ -16,6 +16,7 @@ export const JournalView: React.FC = () => {
   const [subTab, setSubTab] = useState<'letters' | 'capsules' | 'fridge'>('letters');
   const [notes, setNotes] = useState<Note[]>(() => coupleStore.getNotes(false));
   const [isAddingLetter, setIsAddingLetter] = useState(false);
+  const [editingLetter, setEditingLetter] = useState<Note | null>(null);
   const [isAddingCapsule, setIsAddingCapsule] = useState(false);
 
   // New letter form
@@ -53,6 +54,21 @@ export const JournalView: React.FC = () => {
     playSparkle();
     showLoveSuccess('Love letter safely saved in our journal! 💌❤️', '✨');
     setIsAddingLetter(false);
+    setTitle('');
+    setContent('');
+  };
+
+  const handleSaveEditLetter = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingLetter) return;
+    coupleStore.updateNote(editingLetter.id, {
+      title: title.trim() || '',
+      content: content.trim(),
+      tag
+    });
+    playSparkle();
+    showLoveSuccess('Love letter updated! 💌✨', '🎉');
+    setEditingLetter(null);
     setTitle('');
     setContent('');
   };
@@ -136,9 +152,9 @@ export const JournalView: React.FC = () => {
             </button>
           </div>
 
-          {/* Add Letter Modal */}
+          {/* Add / Edit Letter Modal */}
           <AnimatePresence>
-            {isAddingLetter && (
+            {(isAddingLetter || editingLetter) && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm">
                 <motion.div
                   initial={{ scale: 0.9, opacity: 0 }}
@@ -147,17 +163,20 @@ export const JournalView: React.FC = () => {
                   className="relative max-w-lg w-full bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-rose-200"
                 >
                   <button
-                    onClick={() => setIsAddingLetter(false)}
-                    className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-rose-50"
+                    onClick={() => {
+                      setIsAddingLetter(false);
+                      setEditingLetter(null);
+                    }}
+                    className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-rose-50 cursor-pointer"
                   >
-                    ✕
+                    <X size={18} />
                   </button>
 
                   <h3 className="text-xl font-bold text-stone-800 font-serif-title mb-4">
-                    Write A Love Journal Entry ✍️
+                    {editingLetter ? 'Edit Love Journal Entry ✍️' : 'Write A Love Journal Entry ✍️'}
                   </h3>
 
-                  <form onSubmit={handleCreateLetter} noValidate className="space-y-4">
+                  <form onSubmit={editingLetter ? handleSaveEditLetter : handleCreateLetter} noValidate className="space-y-4">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Title</label>
@@ -200,9 +219,9 @@ export const JournalView: React.FC = () => {
                     <button
                       type="submit"
                       disabled={!content.trim()}
-                      className="w-full py-2.5 px-4 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold shadow-md"
+                      className="w-full py-2.5 px-4 bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer"
                     >
-                      Save to Love Journal 💌
+                      {editingLetter ? 'Save Letter Changes ✨' : 'Save to Love Journal 💌'}
                     </button>
                   </form>
                 </motion.div>
@@ -247,13 +266,28 @@ export const JournalView: React.FC = () => {
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-stone-100 flex items-center justify-between text-xs text-stone-400">
-                    <span>Written by {letter.authorId === 'partner1' ? 'Sahil (BabyGirl)' : 'Asmi (Supari)'} ❤️</span>
-                    <button
-                      onClick={() => handleDelete(letter.id)}
-                      className="hover:text-rose-500 p-1 transition"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <span>Written by {letter.authorId === 'partner1' ? 'Sahil' : 'Asmi'} ❤️</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          setEditingLetter(letter);
+                          setTitle(letter.title || '');
+                          setContent(letter.content);
+                          setTag(letter.tag || 'Why I Love You');
+                        }}
+                        className="hover:text-amber-500 p-1 text-stone-400 hover:bg-amber-50 rounded-md transition cursor-pointer"
+                        title="Edit letter"
+                      >
+                        <Edit3 size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(letter.id)}
+                        className="hover:text-rose-500 p-1 text-stone-400 hover:bg-rose-50 rounded-md transition cursor-pointer"
+                        title="Delete letter"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               ))}

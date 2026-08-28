@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Plus, Sparkles, Trash2, Volume2, Bookmark, Heart } from 'lucide-react';
+import { BookOpen, Plus, Sparkles, Trash2, Volume2, Bookmark, Heart, Edit3, X } from 'lucide-react';
 import { InsideJokeItem } from '../types';
 import { coupleStore } from '../services/store';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +13,7 @@ export const InsideJokeDictionary: React.FC = () => {
   const { playSparkle, playHeartPop, playPokeSound } = useSound();
   const [jokes, setJokes] = useState<InsideJokeItem[]>(() => coupleStore.getInsideJokes());
   const [isAdding, setIsAdding] = useState(false);
+  const [editingItem, setEditingItem] = useState<InsideJokeItem | null>(null);
 
   // Form states
   const [word, setWord] = useState('');
@@ -34,7 +35,7 @@ export const InsideJokeDictionary: React.FC = () => {
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!word.trim()) {
-      showLoveWarning('Please enter the hilarious inside joke word/phrase, my love! 😂', '✨');
+      showLoveWarning('Please enter the inside joke word/phrase, my love! 😂', '✨');
       return;
     }
     if (!definition.trim()) {
@@ -42,7 +43,7 @@ export const InsideJokeDictionary: React.FC = () => {
       return;
     }
     if (!example.trim()) {
-      showLoveWarning('Please write an in-a-sentence example (no context for outsiders)! 🤭', '💖');
+      showLoveWarning('Please write an in-a-sentence example! 🤭', '💖');
       return;
     }
     if (!currentPartner) return;
@@ -60,17 +61,49 @@ export const InsideJokeDictionary: React.FC = () => {
     playSparkle();
     confetti({ particleCount: 40, spread: 50 });
     showLoveSuccess('Inside joke added to our private dictionary! 😂📖', '🎉');
+    resetForm();
+    setIsAdding(false);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem) return;
+    coupleStore.updateInsideJoke(editingItem.id, {
+      word: word.trim() || editingItem.word,
+      pronunciation: pronunciation.trim() || '',
+      partOfSpeech: partOfSpeech.trim() || 'noun',
+      definition: definition.trim() || editingItem.definition,
+      example: example.trim() || editingItem.example,
+      origin: origin.trim() || ''
+    });
+    playSparkle();
+    showLoveSuccess('Inside joke updated in dictionary! 📖✨', '🎉');
+    setEditingItem(null);
+  };
+
+  const startEdit = (item: InsideJokeItem) => {
+    setEditingItem(item);
+    setWord(item.word);
+    setPronunciation(item.pronunciation || '');
+    setPartOfSpeech(item.partOfSpeech || 'noun');
+    setDefinition(item.definition);
+    setExample(item.example);
+    setOrigin(item.origin || '');
+  };
+
+  const resetForm = () => {
     setWord('');
     setPronunciation('');
+    setPartOfSpeech('noun');
     setDefinition('');
     setExample('');
     setOrigin('');
-    setIsAdding(false);
   };
 
   const handleDelete = (id: string) => {
     playHeartPop();
     coupleStore.deleteInsideJoke(id);
+    showLoveSuccess('Inside joke removed', '🗑️');
   };
 
   return (
@@ -91,8 +124,11 @@ export const InsideJokeDictionary: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setIsAdding(true)}
-          className="py-3 px-5 rounded-2xl bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold text-xs shadow-lg shadow-rose-200 transition flex items-center gap-2"
+          onClick={() => {
+            resetForm();
+            setIsAdding(true);
+          }}
+          className="py-3 px-5 rounded-2xl bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold text-xs shadow-lg shadow-rose-200 transition flex items-center gap-2 cursor-pointer hover:scale-105"
         >
           <Plus size={16} /> Define New Word
         </button>
@@ -128,7 +164,7 @@ export const InsideJokeDictionary: React.FC = () => {
 
                 <button
                   onClick={() => playPokeSound('kiss')}
-                  className="p-2 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition"
+                  className="p-2 text-stone-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition cursor-pointer"
                   title="Pronounce"
                 >
                   <Volume2 size={16} />
@@ -172,20 +208,30 @@ export const InsideJokeDictionary: React.FC = () => {
                 <Heart size={12} className="fill-rose-500" />
                 Entered by {item.addedById === 'partner1' ? 'Sahil' : 'Asmi'}
               </span>
-              <button
-                onClick={() => handleDelete(item.id)}
-                className="hover:text-rose-500 p-1 text-stone-300 transition"
-              >
-                <Trash2 size={14} />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => startEdit(item)}
+                  className="hover:text-amber-500 p-1 text-stone-300 hover:bg-amber-50 rounded-md transition cursor-pointer"
+                  title="Edit word definition"
+                >
+                  <Edit3 size={15} />
+                </button>
+                <button
+                  onClick={() => handleDelete(item.id)}
+                  className="hover:text-rose-500 p-1 text-stone-300 hover:bg-rose-50 rounded-md transition cursor-pointer"
+                  title="Delete word"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
             </div>
           </motion.div>
         ))}
       </div>
 
-      {/* Add Word Modal */}
+      {/* Add / Edit Word Modal */}
       <AnimatePresence>
-        {isAdding && (
+        {(isAdding || editingItem) && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -194,25 +240,28 @@ export const InsideJokeDictionary: React.FC = () => {
               className="relative max-w-lg w-full bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-rose-200"
             >
               <button
-                onClick={() => setIsAdding(false)}
-                className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-rose-50"
+                onClick={() => {
+                  setIsAdding(false);
+                  setEditingItem(null);
+                }}
+                className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-rose-50 cursor-pointer"
               >
-                ✕
+                <X size={18} />
               </button>
 
               <div className="text-center mb-5">
                 <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-500 mx-auto mb-2 flex items-center justify-center text-xl shadow-inner">
-                  <BookOpen size={22} />
+                  {editingItem ? <Edit3 size={22} /> : <BookOpen size={22} />}
                 </div>
                 <h3 className="text-2xl font-bold text-stone-800 font-serif-title">
-                  Define Inside Joke Word 📖
+                  {editingItem ? 'Edit Inside Joke Word 📖' : 'Define Inside Joke Word 📖'}
                 </h3>
                 <p className="text-stone-500 text-xs mt-1">
-                  Add a funny or secret term only the two of you understand.
+                  {editingItem ? 'Update the definition or origin of this inside joke.' : 'Add a funny or secret term only the two of you understand.'}
                 </p>
               </div>
 
-              <form onSubmit={handleAdd} noValidate className="space-y-4">
+              <form onSubmit={editingItem ? handleSaveEdit : handleAdd} noValidate className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-stone-700 uppercase mb-1">The Word / Term</label>
@@ -221,7 +270,7 @@ export const InsideJokeDictionary: React.FC = () => {
                       value={word}
                       onChange={(e) => setWord(e.target.value)}
                       placeholder="e.g. Supari Mode"
-                      className="w-full p-2.5 text-xs rounded-xl border border-stone-200"
+                      className="w-full p-2.5 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
                       required
                     />
                   </div>
@@ -232,7 +281,7 @@ export const InsideJokeDictionary: React.FC = () => {
                       value={partOfSpeech}
                       onChange={(e) => setPartOfSpeech(e.target.value)}
                       placeholder="e.g. noun, verb, state of mind"
-                      className="w-full p-2.5 text-xs rounded-xl border border-stone-200"
+                      className="w-full p-2.5 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
                     />
                   </div>
                 </div>
@@ -246,7 +295,7 @@ export const InsideJokeDictionary: React.FC = () => {
                     value={pronunciation}
                     onChange={(e) => setPronunciation(e.target.value)}
                     placeholder="e.g. /suːˈpɑː.ri moʊd/"
-                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 font-mono"
+                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 font-mono focus:outline-none focus:ring-2 focus:ring-rose-400"
                   />
                 </div>
 
@@ -258,7 +307,7 @@ export const InsideJokeDictionary: React.FC = () => {
                     value={definition}
                     onChange={(e) => setDefinition(e.target.value)}
                     placeholder="Describe what it means in precise dictionary style..."
-                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 resize-none"
+                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 resize-none focus:outline-none focus:ring-2 focus:ring-rose-400"
                     rows={2}
                     required
                   />
@@ -273,7 +322,7 @@ export const InsideJokeDictionary: React.FC = () => {
                     value={example}
                     onChange={(e) => setExample(e.target.value)}
                     placeholder='e.g. "Look at her, full Supari Mode activated."'
-                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 font-serif italic"
+                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 font-serif italic focus:outline-none focus:ring-2 focus:ring-rose-400"
                     required
                   />
                 </div>
@@ -287,15 +336,15 @@ export const InsideJokeDictionary: React.FC = () => {
                     value={origin}
                     onChange={(e) => setOrigin(e.target.value)}
                     placeholder="e.g. Born when we went out for Boba on a rainy Tuesday"
-                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200"
+                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-3 px-4 bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold rounded-xl text-xs shadow-md shadow-rose-200 transition"
+                  className="w-full py-3 px-4 bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold rounded-xl text-xs shadow-md shadow-rose-200 transition cursor-pointer"
                 >
-                  Save to Dictionary 📚
+                  {editingItem ? 'Save Dictionary Changes ✨' : 'Save to Dictionary 📚'}
                 </button>
               </form>
             </motion.div>

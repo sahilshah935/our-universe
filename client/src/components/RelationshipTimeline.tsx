@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSound } from '../context/SoundContext';
 import { useLoveToast } from '../context/LoveToastContext';
 import { uploadImage } from '../services/imageUpload';
-import { Sparkles, Plus, Calendar, Heart, Camera, Compass, Trash2, ArrowDown, Star, MapPin, Upload, Image as ImageIcon, X } from 'lucide-react';
+import { Sparkles, Plus, Calendar, Heart, Camera, Compass, Trash2, ArrowDown, Star, MapPin, Upload, Image as ImageIcon, X, Edit3 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export const RelationshipTimeline: React.FC = () => {
@@ -16,8 +16,10 @@ export const RelationshipTimeline: React.FC = () => {
   const [futureDreams, setFutureDreams] = useState<FutureDreamItem[]>(() => coupleStore.getFutureDreams());
   const [isAddingStep, setIsAddingStep] = useState(false);
   const [isAddingDream, setIsAddingDream] = useState(false);
+  const [editingStep, setEditingStep] = useState<Milestone | null>(null);
+  const [editingDream, setEditingDream] = useState<FutureDreamItem | null>(null);
 
-  // New step form
+  // Step form
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
   const [description, setDescription] = useState('');
@@ -26,7 +28,7 @@ export const RelationshipTimeline: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // New dream form
+  // Dream form
   const [dreamTitle, setDreamTitle] = useState('');
   const [dreamDesc, setDreamDesc] = useState('');
   const [dreamEmoji, setDreamEmoji] = useState('✈️');
@@ -82,10 +84,7 @@ export const RelationshipTimeline: React.FC = () => {
       playSparkle();
       confetti({ particleCount: 50, spread: 60 });
       showLoveSuccess('Story chapter pinned to our relationship timeline! 🗺️💖', '🎉');
-      setTitle('');
-      setDate('');
-      setDescription('');
-      setPhotoUrl('');
+      resetStepForm();
       setIsAddingStep(false);
     } catch (err) {
       console.error(err);
@@ -93,6 +92,38 @@ export const RelationshipTimeline: React.FC = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSaveEditStep = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStep) return;
+    coupleStore.updateTimelineMilestone(editingStep.id, {
+      title: title.trim() || editingStep.title,
+      date: date || editingStep.date,
+      description: description.trim() || '',
+      icon,
+      photoUrl: photoUrl.trim() || ''
+    });
+    playSparkle();
+    showLoveSuccess('Milestone updated! 🗺️✨', '🎉');
+    setEditingStep(null);
+  };
+
+  const startEditStep = (step: Milestone) => {
+    setEditingStep(step);
+    setTitle(step.title);
+    setDate(step.date);
+    setDescription(step.description || '');
+    setIcon(step.icon || '💖');
+    setPhotoUrl(step.photoUrl || '');
+  };
+
+  const resetStepForm = () => {
+    setTitle('');
+    setDate('');
+    setDescription('');
+    setIcon('💖');
+    setPhotoUrl('');
   };
 
   const handleAddDream = (e: React.FormEvent) => {
@@ -113,9 +144,37 @@ export const RelationshipTimeline: React.FC = () => {
 
     playSparkle();
     showLoveSuccess('Future dream added to "The Next Chapter"! 🌟✨', '💖');
+    resetDreamForm();
+    setIsAddingDream(false);
+  };
+
+  const handleSaveEditDream = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDream) return;
+    coupleStore.updateFutureDream(editingDream.id, {
+      title: dreamTitle.trim() || editingDream.title,
+      description: dreamDesc.trim(),
+      emoji: dreamEmoji,
+      targetYear: dreamYear
+    });
+    playSparkle();
+    showLoveSuccess('Future dream updated! 🌟✨', '🎉');
+    setEditingDream(null);
+  };
+
+  const startEditDream = (dream: FutureDreamItem) => {
+    setEditingDream(dream);
+    setDreamTitle(dream.title);
+    setDreamDesc(dream.description || '');
+    setDreamEmoji(dream.emoji || '🏡');
+    setDreamYear(dream.targetYear || 'Soon');
+  };
+
+  const resetDreamForm = () => {
     setDreamTitle('');
     setDreamDesc('');
-    setIsAddingDream(false);
+    setDreamEmoji('✈️');
+    setDreamYear('Soon');
   };
 
   return (
@@ -135,7 +194,10 @@ export const RelationshipTimeline: React.FC = () => {
 
         <button
           type="button"
-          onClick={() => setIsAddingStep(true)}
+          onClick={() => {
+            resetStepForm();
+            setIsAddingStep(true);
+          }}
           className="inline-flex items-center gap-2 px-5 py-2.5 bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-2xl font-bold text-xs shadow-md shadow-rose-200 transition cursor-pointer hover:scale-105"
         >
           <Plus size={16} /> Add Milestone Step
@@ -169,16 +231,25 @@ export const RelationshipTimeline: React.FC = () => {
                   </h3>
                 </div>
 
-                <button
-                  onClick={() => {
-                    playHeartPop();
-                    coupleStore.deleteTimelineMilestone(step.id);
-                  }}
-                  className="p-1.5 text-stone-300 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition cursor-pointer"
-                  title="Delete Milestone"
-                >
-                  <Trash2 size={15} />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => startEditStep(step)}
+                    className="p-1.5 text-stone-400 hover:text-amber-500 rounded-lg hover:bg-amber-50 transition cursor-pointer"
+                    title="Edit Milestone"
+                  >
+                    <Edit3 size={15} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      playHeartPop();
+                      coupleStore.deleteTimelineMilestone(step.id);
+                    }}
+                    className="p-1.5 text-stone-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                    title="Delete Milestone"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
               </div>
 
               {step.description && (
@@ -214,7 +285,10 @@ export const RelationshipTimeline: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => setIsAddingDream(true)}
+            onClick={() => {
+              resetDreamForm();
+              setIsAddingDream(true);
+            }}
             className="py-2.5 px-4 rounded-xl bg-white text-purple-950 font-bold text-xs shadow-md hover:bg-pink-100 transition flex items-center gap-1.5 cursor-pointer shrink-0"
           >
             <Plus size={15} /> Add Future Dream
@@ -241,214 +315,234 @@ export const RelationshipTimeline: React.FC = () => {
 
               <div className="mt-4 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-purple-300">
                 <span>Dreamt by {dream.addedById === 'partner1' ? 'Sahil' : 'Asmi'}</span>
-                <button
-                  onClick={() => {
-                    playHeartPop();
-                    coupleStore.deleteFutureDream(dream.id);
-                  }}
-                  className="hover:text-rose-400 p-1 transition cursor-pointer"
-                >
-                  <Trash2 size={13} />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => startEditDream(dream)}
+                    className="hover:text-amber-300 p-1 transition cursor-pointer"
+                    title="Edit dream"
+                  >
+                    <Edit3 size={13} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      playHeartPop();
+                      coupleStore.deleteFutureDream(dream.id);
+                    }}
+                    className="hover:text-rose-400 p-1 transition cursor-pointer"
+                    title="Delete dream"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               </div>
             </motion.div>
           ))}
         </div>
       </div>
 
-      {/* Add Milestone Step Modal */}
-      {isAddingStep && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm overflow-y-auto">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className="relative max-w-lg w-full bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-rose-200 my-auto text-stone-800"
-          >
-            <button
-              type="button"
-              onClick={() => setIsAddingStep(false)}
-              className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-rose-50 cursor-pointer"
+      {/* Add / Edit Milestone Step Modal */}
+      <AnimatePresence>
+        {(isAddingStep || editingStep) && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-lg w-full bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-rose-200 my-auto text-stone-800"
             >
-              <X size={20} />
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddingStep(false);
+                  setEditingStep(null);
+                }}
+                className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-rose-50 cursor-pointer"
+              >
+                <X size={20} />
+              </button>
 
-            <h3 className="text-2xl font-bold text-stone-800 font-serif-title mb-4">
-              Add Timeline Milestone 💖
-            </h3>
+              <h3 className="text-2xl font-bold text-stone-800 font-serif-title mb-4">
+                {editingStep ? 'Edit Timeline Milestone 💖' : 'Add Timeline Milestone 💖'}
+              </h3>
 
-            <form onSubmit={handleAddStep} noValidate className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Title</label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. The First Date"
-                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Date</label>
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Emoji Icon</label>
-                <div className="flex gap-2 text-xl">
-                  {['💬', '☕', '😂', '🩹', '🏡', '✈️', '💍', '✨'].map((em) => (
-                    <button
-                      key={em}
-                      type="button"
-                      onClick={() => setIcon(em)}
-                      className={`p-1.5 rounded-lg border cursor-pointer ${icon === em ? 'border-rose-500 bg-rose-50 shadow-xs' : 'border-stone-200'}`}
-                    >
-                      {em}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
-                  Why That Moment Mattered (Handwritten Note)
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Write what you felt and why this moment was unforgettable..."
-                  className="w-full p-2.5 text-xs rounded-xl border border-stone-200 font-handwriting text-lg resize-none focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  rows={3}
-                />
-              </div>
-
-              {/* Photo Upload or URL */}
-              <div>
-                <label className="block text-xs font-bold text-stone-700 uppercase mb-1 flex items-center gap-1">
-                  <ImageIcon size={13} className="text-rose-500" /> Photo (Saved to Google Drive)
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={photoUrl}
-                    onChange={(e) => setPhotoUrl(e.target.value)}
-                    placeholder="Paste image URL or click Choose File..."
-                    className="flex-1 p-2.5 text-xs rounded-xl border border-stone-200 bg-stone-50/50 focus:outline-none focus:ring-2 focus:ring-rose-400"
-                  />
-                  <label className="py-2 px-3.5 bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-xl text-xs font-bold cursor-pointer transition flex items-center gap-1.5 shrink-0 shadow-xs">
-                    <Upload size={14} />
-                    {isUploading ? 'Uploading...' : 'Choose File'}
-                    <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
-                  </label>
-                </div>
-                {photoUrl && (
-                  <div className="mt-2.5 w-full h-36 rounded-2xl overflow-hidden border-2 border-rose-200 relative group">
-                    <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
-                    <div className="absolute top-2 right-2 px-2 py-0.5 bg-black/60 text-white text-[10px] font-bold rounded-md">
-                      Photo Loaded ✨
-                    </div>
+              <form onSubmit={editingStep ? handleSaveEditStep : handleAddStep} noValidate className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="e.g. The First Date"
+                      className="w-full p-2.5 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                      required
+                    />
                   </div>
-                )}
-              </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Date</label>
+                    <input
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="w-full p-2.5 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                      required
+                    />
+                  </div>
+                </div>
 
-              <button
-                type="submit"
-                disabled={isUploading || isSaving || !title.trim() || !date}
-                className="w-full py-3 px-4 bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md shadow-rose-200 transition cursor-pointer disabled:opacity-60"
-              >
-                {isUploading ? 'Uploading Photo to Google Drive... ⏳' : isSaving ? 'Saving Milestone... ✨' : 'Save Milestone Step ✨'}
-              </button>
-            </form>
-          </motion.div>
-        </div>
-      )}
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Emoji Icon</label>
+                  <div className="flex gap-2 text-xl">
+                    {['💬', '☕', '😂', '🩹', '🏡', '✈️', '💍', '✨'].map((em) => (
+                      <button
+                        key={em}
+                        type="button"
+                        onClick={() => setIcon(em)}
+                        className={`p-1.5 rounded-lg border cursor-pointer ${icon === em ? 'border-rose-500 bg-rose-50 shadow-xs' : 'border-stone-200'}`}
+                      >
+                        {em}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-      {/* Add Future Dream Modal */}
-      {isAddingDream && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm overflow-y-auto">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className="relative max-w-md w-full bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-purple-200 my-auto text-stone-800"
-          >
-            <button
-              type="button"
-              onClick={() => setIsAddingDream(false)}
-              className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-purple-50 cursor-pointer"
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">
+                    Why That Moment Mattered (Handwritten Note)
+                  </label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Write what you felt and why this moment was unforgettable..."
+                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 font-handwriting text-lg resize-none focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    rows={3}
+                  />
+                </div>
+
+                {/* Photo Upload or URL */}
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1 flex items-center gap-1">
+                    <ImageIcon size={13} className="text-rose-500" /> Photo (Saved to Google Drive)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={photoUrl}
+                      onChange={(e) => setPhotoUrl(e.target.value)}
+                      placeholder="Paste image URL or click Choose File..."
+                      className="flex-1 p-2.5 text-xs rounded-xl border border-stone-200 bg-stone-50/50 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    />
+                    <label className="py-2 px-3.5 bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-xl text-xs font-bold cursor-pointer transition flex items-center gap-1.5 shrink-0 shadow-xs">
+                      <Upload size={14} />
+                      {isUploading ? 'Uploading...' : 'Choose File'}
+                      <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+                    </label>
+                  </div>
+                  {photoUrl && (
+                    <div className="mt-2.5 w-full h-36 rounded-2xl overflow-hidden border-2 border-rose-200 relative group">
+                      <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                      <div className="absolute top-2 right-2 px-2 py-0.5 bg-black/60 text-white text-[10px] font-bold rounded-md">
+                        Photo Loaded ✨
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isUploading || isSaving || !title.trim() || !date}
+                  className="w-full py-3 px-4 bg-linear-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md shadow-rose-200 transition cursor-pointer disabled:opacity-60"
+                >
+                  {isUploading ? 'Uploading Photo to Google Drive... ⏳' : isSaving ? 'Saving Milestone... ✨' : editingStep ? 'Save Milestone Changes ✨' : 'Save Milestone Step ✨'}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Add / Edit Future Dream Modal */}
+      <AnimatePresence>
+        {(isAddingDream || editingDream) && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-md w-full bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-purple-200 my-auto text-stone-800"
             >
-              <X size={20} />
-            </button>
-
-            <h3 className="text-2xl font-bold text-stone-800 font-serif-title mb-4">
-              Add Future Dream 🌟
-            </h3>
-
-            <form onSubmit={handleAddDream} noValidate className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Dream Title</label>
-                <input
-                  type="text"
-                  value={dreamTitle}
-                  onChange={(e) => setDreamTitle(e.target.value)}
-                  placeholder="e.g. Road Trip across Amalfi Coast"
-                  className="w-full p-2.5 text-xs rounded-xl border border-stone-200"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Emoji</label>
-                  <input
-                    type="text"
-                    value={dreamEmoji}
-                    onChange={(e) => setDreamEmoji(e.target.value)}
-                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 text-center text-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Target Year</label>
-                  <input
-                    type="text"
-                    value={dreamYear}
-                    onChange={(e) => setDreamYear(e.target.value)}
-                    placeholder="2026 or Soon"
-                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Description</label>
-                <textarea
-                  value={dreamDesc}
-                  onChange={(e) => setDreamDesc(e.target.value)}
-                  placeholder="Describe how we'll spend that moment together..."
-                  className="w-full p-2.5 text-xs rounded-xl border border-stone-200 font-handwriting text-lg resize-none"
-                  rows={3}
-                />
-              </div>
-
               <button
-                type="submit"
-                className="w-full py-3 px-4 bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl text-xs shadow-md transition cursor-pointer"
+                type="button"
+                onClick={() => {
+                  setIsAddingDream(false);
+                  setEditingDream(null);
+                }}
+                className="absolute top-4 right-4 p-2 text-stone-400 hover:text-stone-700 rounded-full hover:bg-purple-50 cursor-pointer"
               >
-                Add to Future Dreams 🌟
+                <X size={20} />
               </button>
-            </form>
-          </motion.div>
-        </div>
-      )}
+
+              <h3 className="text-2xl font-bold text-stone-800 font-serif-title mb-4">
+                {editingDream ? 'Edit Future Dream 🌟' : 'Add Future Dream 🌟'}
+              </h3>
+
+              <form onSubmit={editingDream ? handleSaveEditDream : handleAddDream} noValidate className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Dream Title</label>
+                  <input
+                    type="text"
+                    value={dreamTitle}
+                    onChange={(e) => setDreamTitle(e.target.value)}
+                    placeholder="e.g. Road Trip across Amalfi Coast"
+                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Emoji</label>
+                    <input
+                      type="text"
+                      value={dreamEmoji}
+                      onChange={(e) => setDreamEmoji(e.target.value)}
+                      className="w-full p-2.5 text-xs rounded-xl border border-stone-200 text-center text-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Target Year</label>
+                    <input
+                      type="text"
+                      value={dreamYear}
+                      onChange={(e) => setDreamYear(e.target.value)}
+                      placeholder="2026 or Soon"
+                      className="w-full p-2.5 text-xs rounded-xl border border-stone-200"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 uppercase mb-1">Description</label>
+                  <textarea
+                    value={dreamDesc}
+                    onChange={(e) => setDreamDesc(e.target.value)}
+                    placeholder="Describe how we'll spend that moment together..."
+                    className="w-full p-2.5 text-xs rounded-xl border border-stone-200 font-handwriting text-lg resize-none"
+                    rows={3}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 px-4 bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl text-xs shadow-md transition cursor-pointer"
+                >
+                  {editingDream ? 'Save Dream Changes 🌟' : 'Add to Future Dreams 🌟'}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

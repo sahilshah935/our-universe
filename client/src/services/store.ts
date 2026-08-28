@@ -496,6 +496,11 @@ export class CoupleStore {
     this.saveLocal();
     return created;
   }
+  updateCountdown(id: string, updates: Partial<Countdown>): Countdown {
+    this.data.countdowns = this.data.countdowns.map((c) => (c.id === id ? { ...c, ...updates } : c));
+    this.saveLocal();
+    return this.data.countdowns.find((c) => c.id === id)!;
+  }
   deleteCountdown(id: string) {
     this.data.countdowns = this.data.countdowns.filter((c) => c.id !== id);
     this.saveLocal();
@@ -534,6 +539,22 @@ export class CoupleStore {
 
     return created;
   }
+  async updateMemory(id: string, updates: Partial<Memory>): Promise<Memory> {
+    this.data.memories = this.data.memories.map((m) => (m.id === id ? { ...m, ...updates } : m));
+    const updated = this.data.memories.find((m) => m.id === id)!;
+    if (updates.imageUrl) {
+      saveMediaItem(id, updates.imageUrl);
+    }
+    this.saveLocal();
+    if (firestoreDb) {
+      try {
+        await setDoc(doc(firestoreDb, 'couple_memories', id), cleanFirestoreData(updated), { merge: true });
+      } catch (err) {
+        console.warn('Memory cloud update note:', err);
+      }
+    }
+    return updated;
+  }
   deleteMemory(id: string) {
     this.data.memories = this.data.memories.filter((m) => m.id !== id);
     deleteMediaItem(id);
@@ -557,6 +578,11 @@ export class CoupleStore {
     this.saveLocal();
     return created;
   }
+  updateNickname(id: string, updates: Partial<NicknameItem>): NicknameItem {
+    this.data.nicknames = this.data.nicknames.map((n) => (n.id === id ? { ...n, ...updates } : n));
+    this.saveLocal();
+    return this.data.nicknames.find((n) => n.id === id)!;
+  }
   deleteNickname(id: string) {
     this.data.nicknames = this.data.nicknames.filter((n) => n.id !== id);
     this.saveLocal();
@@ -576,6 +602,11 @@ export class CoupleStore {
     this.saveLocal();
     return created;
   }
+  updateInsideJoke(id: string, updates: Partial<InsideJokeItem>): InsideJokeItem {
+    this.data.insideJokes = this.data.insideJokes.map((j) => (j.id === id ? { ...j, ...updates } : j));
+    this.saveLocal();
+    return this.data.insideJokes.find((j) => j.id === id)!;
+  }
   deleteInsideJoke(id: string) {
     this.data.insideJokes = this.data.insideJokes.filter((j) => j.id !== id);
     this.saveLocal();
@@ -593,6 +624,11 @@ export class CoupleStore {
     this.data.timeline = [...this.data.timeline, created];
     this.saveLocal();
     return created;
+  }
+  updateTimelineMilestone(id: string, updates: Partial<Milestone>): Milestone {
+    this.data.timeline = this.data.timeline.map((t) => (t.id === id ? { ...t, ...updates } : t));
+    this.saveLocal();
+    return this.data.timeline.find((t) => t.id === id)!;
   }
   deleteTimelineMilestone(id: string) {
     this.data.timeline = this.data.timeline.filter((m) => m.id !== id);
@@ -612,6 +648,11 @@ export class CoupleStore {
     this.data.futureDreams = [created, ...this.data.futureDreams];
     this.saveLocal();
     return created;
+  }
+  updateFutureDream(id: string, updates: Partial<FutureDreamItem>): FutureDreamItem {
+    this.data.futureDreams = this.data.futureDreams.map((f) => (f.id === id ? { ...f, ...updates } : f));
+    this.saveLocal();
+    return this.data.futureDreams.find((f) => f.id === id)!;
   }
   deleteFutureDream(id: string) {
     this.data.futureDreams = this.data.futureDreams.filter((f) => f.id !== id);
@@ -635,6 +676,11 @@ export class CoupleStore {
     this.saveLocal();
     return created;
   }
+  updateNote(id: string, updates: Partial<Note>): Note {
+    this.data.notes = this.data.notes.map((n) => (n.id === id ? { ...n, ...updates } : n));
+    this.saveLocal();
+    return this.data.notes.find((n) => n.id === id)!;
+  }
   deleteNote(id: string) {
     this.data.notes = this.data.notes.filter((n) => n.id !== id);
     this.saveLocal();
@@ -654,6 +700,11 @@ export class CoupleStore {
     this.data.bucketList = [created, ...this.data.bucketList];
     this.saveLocal();
     return created;
+  }
+  updateBucketItem(id: string, updates: Partial<BucketListItem>): BucketListItem {
+    this.data.bucketList = this.data.bucketList.map((b) => (b.id === id ? { ...b, ...updates } : b));
+    this.saveLocal();
+    return this.data.bucketList.find((b) => b.id === id)!;
   }
   toggleBucketItem(id: string): BucketListItem {
     this.data.bucketList = this.data.bucketList.map((item) =>
